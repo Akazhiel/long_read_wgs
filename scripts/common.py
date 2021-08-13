@@ -2,11 +2,12 @@
 @author: Jonatan González Rodríguez <jonatan.gonzalez.r@outlook.com> 
 """
 
+import logging
+import os
 import subprocess
 import sys
+
 from scripts.tools import *
-import os
-import logging
 
 
 def exec_command(cmd, detach=False):
