@@ -1,5 +1,5 @@
 """
-@author: Jonatan González Rodríguez <jonatan.gonzalez.r@outlook.com> 
+@author: Jonatan González Rodríguez <jonatan.gonzalez.r@outlook.com>
 """
 
 import logging
@@ -30,23 +30,26 @@ def reformat_nanomonsv(inp, out):
                 .replace('CONTROL', 'NORMAL_nanomon')
                 .split('\t')
             )
-            filtered_vcf.write(line)
+            filtered_vcf.write(
+                line.replace('TUMOR', 'TUMOR_nanomon').replace('CONTROL', 'NORMAL_nanomon')
+            )
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
-            Format = columns[headers.index('FORMAT')].replace('TR', 'DR').replace('VR', 'DV')
-            Format = 'GT:' + Format
-            Normal = './.:' + columns[headers.index('CONTROL')]
-            Tumor = './.:' + columns[headers.index('TUMOR')]
-            filtered_vcf.write(
-                '{}\t{}\t{}\t{}\n'.format('\t'.join(columns[0:8]), Format, Tumor, Normal)
-            )
+            if columns[headers.index('FILTER')] == 'PASS':
+                Format = columns[headers.index('FORMAT')].replace('TR', 'DR').replace('VR', 'DV')
+                Format = 'GT:' + Format
+                Normal = './.:' + columns[headers.index('NORMAL_nanomon')]
+                Tumor = './.:' + columns[headers.index('TUMOR_nanomon')]
+                filtered_vcf.write(
+                    '{}\t{}\t{}\t{}\n'.format('\t'.join(columns[0:8]), Format, Tumor, Normal)
+                )
         else:
             filtered_vcf.write(line)
     vcf.close()
     filtered_vcf.close()
 
 
-def reformat_svim(inp, out, sample):
+def reformat_svim(inp, out, columnid, qual):
     vcf = open(inp, 'r')
     filtered_vcf = open(out, 'w')
     for line in vcf:
@@ -69,13 +72,21 @@ def reformat_svim(inp, out, sample):
             filtered_vcf.write(line)
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
-            Format = columns[headers.index('FORMAT')].replace('DP', 'DR').replace('AD', 'DV')
-            Tumor = re.split(':|,', columns[headers.index(sample)])
-            del Tumor[1]
-            filtered_vcf.write(
-                '{}\t{}\t{}\n'.format('\t'.join(columns[0:8]), Format, ':'.join(Tumor))
-            )
+            if int(columns[headers.index('QUAL')]) >= qual and (columns[headers.index('FILTER')] == 'PASS'):
+                Format = columns[headers.index('FORMAT')].replace('DP', 'DR').replace('AD', 'DV')
+                Tumor = re.split(':|,', columns[headers.index(columnid)])
+                del Tumor[1]
+                filtered_vcf.write(
+                    '{}\t{}\t{}\n'.format('\t'.join(columns[0:8]), Format, ':'.join(Tumor))
+                )
         else:
             filtered_vcf.write(line)
     vcf.close()
     filtered_vcf.close()
+
+
+# def filter_cutesv(inp, out):
+#     vcf = open(inp, 'r')
+#     filtered_vcf = open(out, 'w')
+#     for line in vcf:
+#         if line.startswith('#CHROM')
