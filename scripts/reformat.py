@@ -26,20 +26,21 @@ def reformat_nanomonsv(inp, out):
         elif line.startswith('#CHROM'):
             headers = (
                 line.strip()
-                .replace('TUMOR', 'TUMOR_nanomon')
-                .replace('CONTROL', 'NORMAL_nanomon')
+                .replace('TUMOR', 'NANOMON_Tumor')
+                .replace('CONTROL', 'NANOMON_Normal')
                 .split('\t')
             )
             filtered_vcf.write(
-                line.replace('TUMOR', 'TUMOR_nanomon').replace('CONTROL', 'NORMAL_nanomon')
+                line.replace('TUMOR', 'NANOMON_Tumor').replace('CONTROL', 'NANOMON_Normal')
             )
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
             if columns[headers.index('FILTER')] == 'PASS':
+                columns[headers.index('REF')] = 'N'
                 Format = columns[headers.index('FORMAT')].replace('TR', 'DR').replace('VR', 'DV')
                 Format = 'GT:' + Format
-                Normal = './.:' + columns[headers.index('NORMAL_nanomon')]
-                Tumor = './.:' + columns[headers.index('TUMOR_nanomon')]
+                Normal = './.:' + columns[headers.index('NANOMON_Normal')]
+                Tumor = './.:' + columns[headers.index('NANOMON_Tumor')]
                 filtered_vcf.write(
                     '{}\t{}\t{}\t{}\n'.format('\t'.join(columns[0:8]), Format, Tumor, Normal)
                 )
@@ -65,6 +66,12 @@ def reformat_svim(inp, out, columnid, qual):
                 'ID=DV,Number=R,Type=Integer,Description="# of reads supporting the variant allele."',
             )
             filtered_vcf.write(new_DV)
+        elif line.startswith('##') and 'ID=SEQ' in line:
+            new_SEQ = line.replace(
+                '##INFO=<ID=SEQS,Number=.,Type=String,Description="Insertion sequences from all supporting reads">',
+                '##INFO=<ID=SVINSSEQ,Number=1,Type=String,Description="Sequence of insertion">',
+            )
+            filtered_vcf.write(new_SEQ)
         elif line.startswith('##') and 'ID=CN' in line:
             continue
         elif line.startswith('#CHROM'):
@@ -72,12 +79,17 @@ def reformat_svim(inp, out, columnid, qual):
             filtered_vcf.write(line)
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
-            if int(columns[headers.index('QUAL')]) >= qual and (columns[headers.index('FILTER')] == 'PASS'):
+            if int(columns[headers.index('QUAL')]) >= qual and (
+                columns[headers.index('FILTER')] == 'PASS'
+            ):
+                Info = columns[headers.index('INFO')].replace('SEQS', 'SVINSSEQ')
                 Format = columns[headers.index('FORMAT')].replace('DP', 'DR').replace('AD', 'DV')
                 Tumor = re.split(':|,', columns[headers.index(columnid)])
                 del Tumor[1]
                 filtered_vcf.write(
-                    '{}\t{}\t{}\n'.format('\t'.join(columns[0:8]), Format, ':'.join(Tumor))
+                    '{}\t{}\t{}\t{}\n'.format(
+                        '\t'.join(columns[0:7]), Info, Format, ':'.join(Tumor)
+                    )
                 )
         else:
             filtered_vcf.write(line)
@@ -85,8 +97,73 @@ def reformat_svim(inp, out, columnid, qual):
     filtered_vcf.close()
 
 
-# def filter_cutesv(inp, out):
-#     vcf = open(inp, 'r')
-#     filtered_vcf = open(out, 'w')
-#     for line in vcf:
-#         if line.startswith('#CHROM')
+def reformat_sniffles(inp, out, sampleid, columnid):
+    vcf = open(inp, 'r')
+    filtered_vcf = open(out, 'w')
+    for line in vcf:
+        if line.startswith('##') and 'ID=SEQ' in line:
+            new_SEQ = line.replace(
+                '##INFO=<ID=SEQ,Number=1,Type=String,Description="Extracted sequence from the best representative read.">',
+                '##INFO=<ID=SVINSSEQ,Number=1,Type=String,Description="Sequence of insertion">',
+            )
+            filtered_vcf.write(new_SEQ)
+        elif line.startswith('##ALT') and 'TRA' in line:
+            new_BND = line.replace('TRA,Description="Translocation"', 'BND,Description="Breakend"')
+            filtered_vcf.write(new_BND)
+        elif line.startswith('##ALT') and 'INVDUP' in line:
+            pass
+        elif line.startswith('#CHROM'):
+            headers = line.strip().replace(sampleid, columnid).split('\t')
+            filtered_vcf.write(line.replace(sampleid, columnid))
+        elif not line.startswith('#'):
+            columns = line.strip().split('\t')
+            if columns[headers.index('FILTER')] == 'PASS' and 'IMPRECISE' not in line:
+                if 'DEL' in columns[headers.index('INFO')]:
+                    columns[headers.index('REF')] = 'N'
+                    columns[headers.index('ALT')] = '<DEL>'
+                    filtered_vcf.write('\t'.join(columns) + '\n')
+                elif 'INS' in columns[headers.index('INFO')]:
+                    columns[headers.index('INFO')] += ';SVINSSEQ={}'.format(
+                        columns[headers.index('ALT')]
+                    )
+                    columns[headers.index('ALT')] = '<INS>'
+                    filtered_vcf.write('\t'.join(columns) + '\n')
+                elif 'INVDUP' in columns[headers.index('ALT')]:
+                    columns[headers.index('ALT')] = '<INV>'
+                    columns[headers.index('INFO')] = columns[headers.index('INFO')].replace('INVDUP', 'INV')
+                    filtered_vcf.write('\t'.join(columns) + '\n')
+                else:
+                    filtered_vcf.write(line)
+        else:
+            filtered_vcf.write(line)
+
+
+def reformat_cutesv(inp, out):
+    vcf = open(inp, 'r')
+    filtered_vcf = open(out, 'w')
+    for line in vcf:
+        if line.startswith('#CHROM'):
+            headers = line.strip().split('\t')
+            filtered_vcf.write(
+                '##INFO=<ID=SVINSSEQ,Number=1,Type=String,Description="Sequence of insertion">\n'
+            )
+            filtered_vcf.write(line)
+        elif not line.startswith('#'):
+            columns = line.strip().split('\t')
+            if columns[headers.index('FILTER')] == 'PASS' and 'IMPRECISE' not in line:
+                if 'DEL' in columns[headers.index('INFO')]:
+                    columns[headers.index('REF')] = 'N'
+                    columns[headers.index('ALT')] = '<DEL>'
+                    filtered_vcf.write('\t'.join(columns) + '\n')
+                elif 'INS' in columns[headers.index('INFO')]:
+                    columns[headers.index('REF')] = 'N'
+                    columns[headers.index('INFO')] += ';SVINSSEQ={}'.format(
+                        columns[headers.index('ALT')]
+                    )
+                    columns[headers.index('ALT')] = '<INS>'
+                    filtered_vcf.write('\t'.join(columns) + '\n')
+                else:
+                    columns[headers.index('REF')] = 'N'
+                    filtered_vcf.write('\t'.join(columns) + '\n')
+        else:
+            filtered_vcf.write(line)

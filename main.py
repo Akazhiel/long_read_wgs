@@ -6,7 +6,7 @@ data.py
 
 This pipeline trims long-reads with porechop, aligns with minimap2,
 performs structural variant calling with Sniffles, CuteSV, SVIM and
-nanomonSV, and single nucleotide variants with Clai3, NanoCaller and
+nanomonSV, and single nucleotide variants with Clair3, NanoCaller and
 PEPPER.
 The variants are then combined into one big file and annotated with VEP.py
 
@@ -21,14 +21,17 @@ import multiprocessing as mp
 import os
 import shutil
 import sys
+import time
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 from scripts.__version__ import version
 from scripts.common import *
+from scripts.filters import filter_somatic
 from scripts.reformat import *
+from scripts.vcfmerge import merge_variants
 
 
-def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, ASSEMBLY):
+def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
 
     logging.basicConfig(
         format='[%(asctime)s] - [%(levelname)s] - %(message)s',
@@ -54,7 +57,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, ASSEMBLY):
     logger.info('Pipeline version: {}'.format(version))
     logger.info(
         'Processing Normal FASTQ {}; and Tumor FASTQ {} with Sample ID {} '
-        'using reference genome {}.'.format(FQ_NORMAL, FQ_TUMOR, SAMPLEID, ASSEMBLY)
+        'using reference genome {}.'.format(FQ_NORMAL, FQ_TUMOR, SAMPLEID, SNPEFFDB)
     )
 
     sample_normal = SAMPLEID + '_Normal'
@@ -104,14 +107,13 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, ASSEMBLY):
         p2.wait()
 
         cmd = '{} index {}.bam'.format(SAMTOOLS, sample_tumor)
-        p1 = exec_command(cmd, detach = True)
+        p1 = exec_command(cmd, detach=True)
 
-        cmd = '{} index {}.bam'.format(SAMTOOLS, sample_normal)  
-        p2 = exec_command(cmd, detach = True)
+        cmd = '{} index {}.bam'.format(SAMTOOLS, sample_normal)
+        p2 = exec_command(cmd, detach=True)
 
         p1.wait()
         p2.wait()
-
 
         end_map_time = datetime.datetime.now()
         total_map_time = end_map_time - start_map_time
@@ -126,25 +128,30 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, ASSEMBLY):
         cmd = '{} parse {}.bam nanomon_vc/Tumor'.format(NANOMON, sample_tumor)
         p1 = exec_command(cmd, detach=True)
 
+        time.sleep(1)
+
         cmd = '{} parse {}.bam nanomon_vc/Normal'.format(NANOMON, sample_normal)
         p2 = exec_command(cmd, detach=True)
 
         p1.wait()
         p2.wait()
 
-        cmd = '{} get nanomon_vc/Tumor {}.bam {} --use_racon --control_prefix nanomon_vc/Normal --control_bam {}.bam'.format(
-            NANOMON, sample_tumor, GENOME_REF, sample_normal
+        cmd = (
+            '{} get nanomon_vc/Tumor {}.bam {} --use_racon --cluster_margin_size 0 --min_tumor_variant_read_num 0 '
+            '--var_read_min_mapq 0 --control_prefix nanomon_vc/Normal --control_bam {}.bam'.format(
+                NANOMON, sample_tumor, GENOME_REF, sample_normal
+            )
         )
         p3 = exec_command(cmd, detach=True)
 
         logger.info('Variant calling with Sniffles')
 
-        cmd = '{} -s 2 -t {} --genotype --report_BND -m {}.bam -v {}_sniffles.vcf'.format(
+        cmd = '{} -s 0 -t {} --genotype -m {}.bam -v {}_sniffles.vcf'.format(
             SNIFFLES, THREADS, sample_tumor, sample_tumor
         )
         p4 = exec_command(cmd, detach=True)
 
-        cmd = '{} -s 2 -t {} --genotype --report_BND -m {}.bam -v {}_sniffles.vcf'.format(
+        cmd = '{} -s 0 -t {} --genotype -m {}.bam -v {}_sniffles.vcf'.format(
             SNIFFLES, THREADS, sample_normal, sample_normal
         )
         p5 = exec_command(cmd, detach=True)
@@ -153,15 +160,21 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, ASSEMBLY):
 
         # Call variants with SVIM for Tumor sample
 
-        cmd = '{} --sample SVIM_Tumor --tandem_duplications_as_insertions --interspersed_duplications_as_insertions svim_tumor/ {}.bam {}'.format(
-            SVIM, sample_tumor, GENOME_REF
+        cmd = (
+            '{} --sample SVIM_Tumor --insertion_sequences --symbolic_alleles --tandem_duplications_as_insertions '
+            '--interspersed_duplications_as_insertions svim_tumor/ {}.bam {}'.format(
+                SVIM, sample_tumor, GENOME_REF
+            )
         )
         p6 = exec_command(cmd, detach=True)
 
         # Call variants with SVIM for Normal sample
 
-        cmd = '{} --sample SVIM_Normal --tandem_duplications_as_insertions --interspersed_duplications_as_insertions svim_normal/ {}.bam {}'.format(
-            SVIM, sample_normal, GENOME_REF
+        cmd = (
+            '{} --sample SVIM_Normal --insertion_sequences --symbolic_alleles --tandem_duplications_as_insertions '
+            '--interspersed_duplications_as_insertions svim_normal/ {}.bam {}'.format(
+                SVIM, sample_normal, GENOME_REF
+            )
         )
         p7 = exec_command(cmd, detach=True)
 
@@ -169,17 +182,25 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, ASSEMBLY):
 
         # Call variants with cuteSV for Tumor sample
 
+        os.makedirs('cutesv_tumor')
+
         cmd = (
-            '{} -t {} -S CUTESV_Tumor -s 2 --genotype --max_cluster_bias_INS 100 --diff_ratio_merging_INS 0.3 --max_cluster_bias_DEL 100 '
-            '{}.bam {} CUTESV_Tumor.vcf .'.format(CUTESV, THREADS, sample_tumor, GENOME_REF)
+            '{} -t {} -S CUTESV_Tumor -s 0 --genotype --max_cluster_bias_INS 100 --diff_ratio_merging_INS 0.3 --max_cluster_bias_DEL 100 '
+            '--diff_ratio_merging_DEL 0.3 {}.bam {} CUTESV_Tumor.vcf cutesv_tumor/'.format(
+                CUTESV, THREADS, sample_tumor, GENOME_REF
+            )
         )
         p8 = exec_command(cmd, detach=True)
 
         # Call variants with cuteSV for Normal sample
 
+        os.makedirs('cutesv_normal')
+
         cmd = (
-            '{} -t {} -S CUTESV_Normal -s 2 --genotype --max_cluster_bias_INS 100 --diff_ratio_merging_INS 0.3 --max_cluster_bias_DEL 100 '
-            '{}.bam {} CUTESV_Normal.vcf .'.format(CUTESV, THREADS, sample_normal, GENOME_REF)
+            '{} -t {} -S CUTESV_Normal -s 0 --genotype --max_cluster_bias_INS 100 --diff_ratio_merging_INS 0.3 --max_cluster_bias_DEL 100 '
+            '--diff_ratio_merging_DEL 0.3 {}.bam {} CUTESV_Normal.vcf cutesv_normal/'.format(
+                CUTESV, THREADS, sample_normal, GENOME_REF
+            )
         )
         p9 = exec_command(cmd, detach=True)
 
@@ -217,6 +238,11 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, ASSEMBLY):
         p1.join()
         p2.join()
 
+        # Merge individual SVIM calls and filter for somatic variants
+
+        merge_variants(['tmp_svim_tumor.vcf', 'tmp_svim_normal.vcf'], 'svim_combined_calls.vcf', 50)
+        # filter_somatic('svim_combined_calls.vcf', 'svim_combined_calls_filtered.vcf', 'SVIM')
+
         # Reformat nanomonsv VCF to follow Sniffles format
 
         p3 = mp.Process(
@@ -226,13 +252,77 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, ASSEMBLY):
         p3.start()
         p3.join()
 
-        # Filter CuteSV VCF
+        # filter_somatic('tmp_nanomonsv.vcf', 'nanomonsv_filtered.vcf', 'NANOMON')
 
-        # p4 = mp.Process(target=, args=)
-        # p4.start()
-        # p4.join()
+        # Reformat Sniffles to add INS Seq on INFO field
 
-        ## TO-DO:
+        p4 = mp.Process(
+            target=reformat_sniffles,
+            args=(
+                '{}_sniffles.vcf'.format(sample_normal),
+                'tmp_sniffles_normal.vcf',
+                '{}.bam'.format(sample_normal),
+                'SNIFFLES_Normal',
+            ),
+        )
+        p5 = mp.Process(
+            target=reformat_sniffles,
+            args=(
+                '{}_sniffles.vcf'.format(sample_tumor),
+                'tmp_sniffles_tumor.vcf',
+                '{}.bam'.format(sample_tumor),
+                'SNIFFLES_Tumor',
+            ),
+        )
+
+        p4.start()
+        p5.start()
+
+        p4.join()
+        p5.join()
+
+        # Merge individual SNIFFLES calls and filter for somatic variants
+
+        merge_variants(
+            ['tmp_sniffles_tumor.vcf', 'tmp_sniffles_normal.vcf'], 'sniffles_combined_calls.vcf', 50
+        )
+
+        filter_somatic(
+            'sniffles_combined_calls.vcf', 'sniffles_combined_calls_filtered.vcf', 'SNIFFLES'
+        )
+
+        # Reformat CuteSV
+
+        p6 = mp.Process(target=reformat_cutesv, args=('CUTESV_Normal.vcf', 'tmp_cutesv_normal.vcf'))
+        p7 = mp.Process(target=reformat_cutesv, args=('CUTESV_Tumor.vcf', 'tmp_cutesv_tumor.vcf'))
+
+        p6.start()
+        p7.start()
+
+        p6.join()
+        p7.join()
+
+        # Merge individual CUTESV calls and filter for somatic variants
+
+        merge_variants(
+            ['tmp_cutesv_tumor.vcf', 'tmp_cutesv_normal.vcf'], 'cutesv_combined_calls.vcf', 50
+        )
+
+        filter_somatic('cutesv_combined_calls.vcf', 'cutesv_combined_calls_filtered.vcf', 'CUTESV')
+
+        # Merge the combined calls from the different callers and filter based on number of callers
+
+        merge_variants(
+            [
+                'sniffles_combined_calls_filtered.vcf',
+                'cutesv_combined_calls_filtered.vcf',
+                'tmp_nanomonsv.vcf',
+                'svim_combined_calls.vcf',
+            ],
+            'combined_calls.vcf',
+            50,
+        )
+
         # Add per-caller merge and variant filtering.
         # Add ensemble merge and filter based on number of callers.
 
@@ -246,28 +336,41 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, ASSEMBLY):
         logger.info('Starting annotation: {}'.format(start_annotation_time))
 
         try:
+            assert SNPEFFDB in [
+                'hg38',
+                'hg19',
+            ], 'Database error: Wrong database provided, got {}; expected one of these two: hg38 or hg19.'.format(
+                SNPEFFDB
+            )
+
             if SNPEFFDB == 'hg38':
 
-                cmd = '{} -Xmx16g GRCh38.86 -csvStats combined_calls_snpEff.csv -v combined_calls.vcf > annotated_{}.vcf'.format(
+                cmd = '{} -Xmx16g -csvStats combined_calls_snpEff.csv -v GRCh38.99 combined_calls.vcf > annotated_{}.vcf'.format(
                     SNPEFF, SNPEFFDB
                 )
                 exec_command(cmd)
 
             elif SNPEFFDB == 'hg19':
 
-                cmd = '{} -Xmx16g GRCh37.75 -csvStats combined_calls_snpEff.csv -v combined_calls.vcf > annotated_{}.vcf'.format(
+                cmd = '{} -Xmx16g -csvStats combined_calls_snpEff.csv -v GRCh37.75 combined_calls.vcf > annotated_{}.vcf'.format(
                     SNPEFF, SNPEFFDB
                 )
                 exec_command(cmd)
 
-            else:
-                raise ValueError(
-                    "Wrong database specified, please specify one of these two: hg38 or hg19."
-                )
+        except AssertionError as ae:
+            print(ae)
+            logger.error(ae)
+            sys.exit(-1)
 
-        except ValueError as ve:
-            print(ve)
-            logger.error(ve)
+        end_annotation_time = datetime.datetime.now()
+        total_annotation_time = end_annotation_time - start_annotation_time
+        logger.info('Total annotation time: {}'.format(total_annotation_time))
+
+    end_pipeline_time = datetime.datetime.now()
+    total_pipeline_time = end_pipeline_time - start_pipeline_time
+    logger.info('Total pipeline execution time: {}'.format(total_pipeline_time))
+
+    logger.info('COMPLETED!')
 
 
 if __name__ == '__main__':
@@ -275,29 +378,40 @@ if __name__ == '__main__':
     parser.add_argument('FASTQ_NORMAL', help='FASTQ file for Normal sample.')
     parser.add_argument('FASTQ_TUMOR', help='FASTQ file for Tumor sample')
     parser.add_argument(
-        '--genome', type=str, required=True, help='Path to the reference genome FASTA file.'
+        '--genome',
+        metavar='\b',
+        type=str,
+        required=True,
+        help='Path to the reference genome FASTA file.',
     )
     parser.add_argument(
         '--sample',
+        metavar='\b',
         type=str,
-        help='Name of the sample/experiment. Default is sample',
+        help='Name of the sample/experiment. Default is %(default)s',
         default='sample',
     )
     parser.add_argument(
+        '-o',
         '--outdir',
+        metavar='\b',
         type=str,
         required=True,
         help='Path to the output folder where output files will be placed',
     )
     parser.add_argument(
+        '-db',
         '--snpeff-db',
+        metavar='\b',
         type=str,
         default='hg38',
         required=False,
-        help='Genome assembly version to be used in snpEff (default: hg38)',
+        help='Genome assembly version to be used in snpEff. (Default: %(default)s)',
     )
     parser.add_argument(
+        '-t',
         '--threads',
+        metavar='\b',
         help='Number of threads to use in the parallel steps',
         type=int,
         default=10,
@@ -307,8 +421,16 @@ if __name__ == '__main__':
         '--steps',
         nargs='+',
         default=['mapping', 'variant', 'filter', 'annotation'],
-        help='Steps to perform in the pipeline',
+        help='Steps to perform in the pipeline. List of choices: {%(choices)s}',
         choices=['mapping', 'variant', 'filter', 'annotation'],
+    )
+    parser.add_argument(
+        '--num_callers',
+        metavar='\b',
+        help='Filter for number of SV callers required. (Default: %(default)s)',
+        type=int,
+        default=2,
+        required=False,
     )
     # parser.add_argument('--keep-intermediate', default=False, action='store_true', required=False,
     #                     help='Do not remove temporary files')
@@ -322,10 +444,10 @@ if __name__ == '__main__':
     GENOME_REF = os.path.abspath(args.genome)
     THREADS = int(args.threads)
     STEPS = args.steps
-    ASSEMBLY = args.snpeff_db
+    SNPEFFDB = args.snpeff_db
 
     # Move to output dir
     os.makedirs(os.path.abspath(DIR), exist_ok=True)
     os.chdir(os.path.abspath(DIR))
 
-    main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, ASSEMBLY)
+    main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB)
