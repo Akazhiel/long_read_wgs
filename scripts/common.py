@@ -1,5 +1,5 @@
 """
-@author: Jonatan González Rodríguez <jonatan.gonzalez.r@outlook.com> 
+@author: Jonatan González Rodríguez <jonatan.gonzalez.r@outlook.com>
 """
 
 import logging
