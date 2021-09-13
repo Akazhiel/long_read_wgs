@@ -1,0 +1,31 @@
+# You can use this file to create a conda environment for this pipeline:
+#   conda env create -f environment.yml
+name: Nanopore_WGS
+channels:
+  - conda-forge
+  - bioconda
+  - r
+  - defaults
+dependencies:
+  - python~=3.8.1
+  - bioconda::biopython
+  - bioconda::samtools
+  - bioconda::minimap2=2.21
+  - bioconda::snpeff
+  - bioconda::svdb
+  - bioconda::sniffles
+  - bioconda::bedtools
+  - bioconda::mhcflurry
+  - bioconda::vcftools
+  - bioconda::bcftools
+  - bioconda::nanofilt
+  - bioconda::survivor
+  - conda-forge::numpy
+  - bioconda::cutesv
+  - bioconda::svim
+  - bioconda::vcfpy
+  - bioconda::ensembl-vep=102.0
+  - bioconda::fastqc
+  - pip:
+    - nanomonsv
+    
