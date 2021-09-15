@@ -78,13 +78,13 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
         # MAPPING
         logger.info('Starting alignment.')
 
-        cmd = '{} -ax map-ont -t {} --MD {}.mmi {} -o {}.sam'.format(
+        cmd = '{} -ax map-ont -t {} -K4G --MD {}.mmi {} -o {}.sam'.format(
             MINIMAP, THREADS, GENOME_REF, FQ_TUMOR, sample_tumor
         )
 
         p1 = exec_command(cmd, detach=True)
 
-        cmd = '{} -ax map-ont -t {} --MD {}.mmi {} -o {}.sam'.format(
+        cmd = '{} -ax map-ont -t {} --MD -K4G {}.mmi {} -o {}.sam'.format(
             MINIMAP, THREADS, GENOME_REF, FQ_NORMAL, sample_normal
         )
 
@@ -128,7 +128,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
         cmd = '{} parse {}.bam nanomon_vc/Tumor'.format(NANOMON, sample_tumor)
         p1 = exec_command(cmd, detach=True)
 
-        time.sleep(1)
+        time.sleep(1) # Required so the parse step by nanomon is executed in parallel but doesn't break due to the same folder name
 
         cmd = '{} parse {}.bam nanomon_vc/Normal'.format(NANOMON, sample_normal)
         p2 = exec_command(cmd, detach=True)
@@ -241,7 +241,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
         # Merge individual SVIM calls and filter for somatic variants
 
         merge_variants(['tmp_svim_tumor.vcf', 'tmp_svim_normal.vcf'], 'svim_combined_calls.vcf', 50)
-        # filter_somatic('svim_combined_calls.vcf', 'svim_combined_calls_filtered.vcf', 'SVIM')
+        filter_somatic('svim_combined_calls.vcf', 'svim_combined_calls_filtered.vcf', 'SVIM')
 
         # Reformat nanomonsv VCF to follow Sniffles format
 
@@ -323,8 +323,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
             50,
         )
 
-        # Add per-caller merge and variant filtering.
-        # Add ensemble merge and filter based on number of callers.
+        ## TO-DO: Filter on number of callers
 
         end_filter_time = datetime.datetime.now()
         total_filter_time = end_filter_time - start_filter_time

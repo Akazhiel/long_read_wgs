@@ -107,11 +107,13 @@ def reformat_sniffles(inp, out, sampleid, columnid):
                 '##INFO=<ID=SVINSSEQ,Number=1,Type=String,Description="Sequence of insertion">',
             )
             filtered_vcf.write(new_SEQ)
+        elif line.startswith('##FILTER'):
+            filtered_vcf.write('##FILTER=<ID=STRANDBIAS,Description="Strand is biased.">\n')
         elif line.startswith('##ALT') and 'TRA' in line:
             new_BND = line.replace('TRA,Description="Translocation"', 'BND,Description="Breakend"')
             filtered_vcf.write(new_BND)
-        elif line.startswith('##ALT') and 'INVDUP' in line:
-            pass
+        # elif line.startswith('##ALT') and 'INVDUP' in line:
+        #     pass
         elif line.startswith('#CHROM'):
             headers = line.strip().replace(sampleid, columnid).split('\t')
             filtered_vcf.write(line.replace(sampleid, columnid))
@@ -128,10 +130,10 @@ def reformat_sniffles(inp, out, sampleid, columnid):
                     )
                     columns[headers.index('ALT')] = '<INS>'
                     filtered_vcf.write('\t'.join(columns) + '\n')
-                elif 'INVDUP' in columns[headers.index('ALT')]:
-                    columns[headers.index('ALT')] = '<INV>'
-                    columns[headers.index('INFO')] = columns[headers.index('INFO')].replace('INVDUP', 'INV')
-                    filtered_vcf.write('\t'.join(columns) + '\n')
+                # elif 'INVDUP' in columns[headers.index('ALT')]:
+                #     columns[headers.index('ALT')] = '<INV>'
+                #     columns[headers.index('INFO')] = columns[headers.index('INFO')].replace('INVDUP', 'INV')
+                #     filtered_vcf.write('\t'.join(columns) + '\n')
                 else:
                     filtered_vcf.write(line)
         else:

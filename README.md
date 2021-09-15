@@ -2,7 +2,7 @@
 
 
 <p align="center">
-  <img title="WGS workflow" width="70%" height="70%" src="./Diagram.png">
+  <img title="WGS workflow" width="70%" height="70%" src="docs/images/Diagram.png">
 </p>
 
 This pipeline is designed to predict potential neoantigens leveraging the long read sequencing technology. The objective is to use WGS long read with paired normal-tumor data to call for somatic structural variants as well as somatic SNPs and short indels to predict potential new targets in cancers.

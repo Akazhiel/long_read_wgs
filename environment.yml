@@ -28,4 +28,5 @@ dependencies:
   - bioconda::fastqc
   - pip:
     - nanomonsv
+    - svim
     
