@@ -7,10 +7,10 @@ channels:
   - r
   - defaults
 dependencies:
-  - python~=3.8.1
+  - python~=3.7.1
   - bioconda::biopython
   - bioconda::samtools
-  - bioconda::minimap2=2.21
+  - bioconda::minimap2=2.22
   - bioconda::snpeff
   - bioconda::svdb
   - bioconda::sniffles
@@ -22,10 +22,11 @@ dependencies:
   - bioconda::survivor
   - conda-forge::numpy
   - bioconda::cutesv
-  - bioconda::svim
   - bioconda::vcfpy
   - bioconda::ensembl-vep=102.0
   - bioconda::fastqc
+  - bioconda::parasail-python
+  - pip
   - pip:
     - nanomonsv
     - svim
