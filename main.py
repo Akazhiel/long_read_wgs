@@ -137,8 +137,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
         p2.wait()
 
         cmd = (
-            '{} get nanomon_vc/Tumor {}.bam {} --use_racon --cluster_margin_size 0 --min_tumor_variant_read_num 0 '
-            '--var_read_min_mapq 0 --control_prefix nanomon_vc/Normal --control_bam {}.bam'.format(
+            '{} get nanomon_vc/Tumor {}.bam {} --use_racon --control_prefix nanomon_vc/Normal --control_bam {}.bam'.format(
                 NANOMON, sample_tumor, GENOME_REF, sample_normal
             )
         )
@@ -146,12 +145,12 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
 
         logger.info('Variant calling with Sniffles')
 
-        cmd = '{} -s 0 -t {} --genotype -m {}.bam -v {}_sniffles.vcf'.format(
+        cmd = '{} -s 1 -t {} --genotype -d 50 -m {}.bam -v {}_sniffles.vcf'.format(
             SNIFFLES, THREADS, sample_tumor, sample_tumor
         )
         p4 = exec_command(cmd, detach=True)
 
-        cmd = '{} -s 0 -t {} --genotype -m {}.bam -v {}_sniffles.vcf'.format(
+        cmd = '{} -s 1 -t {} --genotype -d 50 -m {}.bam -v {}_sniffles.vcf'.format(
             SNIFFLES, THREADS, sample_normal, sample_normal
         )
         p5 = exec_command(cmd, detach=True)
@@ -161,8 +160,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
         # Call variants with SVIM for Tumor sample
 
         cmd = (
-            '{} --sample SVIM_Tumor --insertion_sequences --symbolic_alleles --tandem_duplications_as_insertions '
-            '--interspersed_duplications_as_insertions svim_tumor/ {}.bam {}'.format(
+            '{} --sample SVIM_Tumor --insertion_sequences --symbolic_alleles svim_tumor/ {}.bam {}'.format(
                 SVIM, sample_tumor, GENOME_REF
             )
         )
@@ -171,8 +169,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
         # Call variants with SVIM for Normal sample
 
         cmd = (
-            '{} --sample SVIM_Normal --insertion_sequences --symbolic_alleles --tandem_duplications_as_insertions '
-            '--interspersed_duplications_as_insertions svim_normal/ {}.bam {}'.format(
+            '{} --sample SVIM_Normal --insertion_sequences --symbolic_alleles svim_normal/ {}.bam {}'.format(
                 SVIM, sample_normal, GENOME_REF
             )
         )
@@ -185,7 +182,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
         os.makedirs('cutesv_tumor')
 
         cmd = (
-            '{} -t {} -S CUTESV_Tumor -s 0 --genotype --max_cluster_bias_INS 100 --diff_ratio_merging_INS 0.3 --max_cluster_bias_DEL 100 '
+            '{} -t {} -S CUTESV_Tumor -s 1 --genotype --max_cluster_bias_INS 100 --diff_ratio_merging_INS 0.3 --max_cluster_bias_DEL 100 '
             '--diff_ratio_merging_DEL 0.3 {}.bam {} CUTESV_Tumor.vcf cutesv_tumor/'.format(
                 CUTESV, THREADS, sample_tumor, GENOME_REF
             )
@@ -197,7 +194,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
         os.makedirs('cutesv_normal')
 
         cmd = (
-            '{} -t {} -S CUTESV_Normal -s 0 --genotype --max_cluster_bias_INS 100 --diff_ratio_merging_INS 0.3 --max_cluster_bias_DEL 100 '
+            '{} -t {} -S CUTESV_Normal -s 1 --genotype --max_cluster_bias_INS 100 --diff_ratio_merging_INS 0.3 --max_cluster_bias_DEL 100 '
             '--diff_ratio_merging_DEL 0.3 {}.bam {} CUTESV_Normal.vcf cutesv_normal/'.format(
                 CUTESV, THREADS, sample_normal, GENOME_REF
             )
@@ -225,11 +222,11 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
 
         p1 = mp.Process(
             target=reformat_svim,
-            args=('svim_tumor/variants.vcf', 'tmp_svim_tumor.vcf', 'SVIM_Tumor', 0),
+            args=('svim_tumor/variants.vcf', 'tmp_svim_tumor.vcf', 'SVIM_Tumor', 10),
         )
         p2 = mp.Process(
             target=reformat_svim,
-            args=('svim_normal/variants.vcf', 'tmp_svim_normal.vcf', 'SVIM_Normal', 0),
+            args=('svim_normal/variants.vcf', 'tmp_svim_normal.vcf', 'SVIM_Normal', 10),
         )
 
         p1.start()
