@@ -115,6 +115,13 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
         p1.wait()
         p2.wait()
 
+        # Remove sam files to free space.
+
+        if os.path.isfile(f'{sample_normal}.sam'):
+            os.remove(f'{sample_normal}.sam')
+        if os.path.isfile(f'{sample_tumor}.sam'):
+            os.remove(f'{sample_tumor}.sam')
+
         end_map_time = datetime.datetime.now()
         total_map_time = end_map_time - start_map_time
         logger.info('Total trimming and mapping execution time: {}'.format(total_map_time))
