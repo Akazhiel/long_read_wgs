@@ -78,14 +78,16 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
         # MAPPING
         logger.info('Starting alignment.')
 
-        cmd = '{} -ax map-ont -t {} -K4G --MD {}.mmi {} -o {}.sam'.format(
+        SAMTOOLS_THREADS = max(int(THREADS / 2), 1)
+
+        cmd = '{} -ax map-ont -t {} -K4G --MD {}.mmi {} | {} sort -m 2G --threads {} -o {}.bam'.format(
             MINIMAP, THREADS, GENOME_REF, FQ_TUMOR, sample_tumor
         )
 
         p1 = exec_command(cmd, detach=True)
 
-        cmd = '{} -ax map-ont -t {} --MD -K4G {}.mmi {} -o {}.sam'.format(
-            MINIMAP, THREADS, GENOME_REF, FQ_NORMAL, sample_normal
+        cmd = '{} -ax map-ont -t {} --MD -K4G {}.mmi {} | {} sort -m 2G --threads {} -o {}.bam'.format(
+            MINIMAP, THREADS, GENOME_REF, FQ_NORMAL, SAMTOOLS, SAMTOOLS_THREADS, sample_normal
         )
 
         p2 = exec_command(cmd, detach=True)
@@ -150,17 +152,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
         )
         p3 = exec_command(cmd, detach=True)
 
-        logger.info('Variant calling with Sniffles')
-
-        cmd = '{} -s 1 -t {} --genotype -d 50 -m {}.bam -v {}_sniffles.vcf'.format(
-            SNIFFLES, THREADS, sample_tumor, sample_tumor
-        )
-        p4 = exec_command(cmd, detach=True)
-
-        cmd = '{} -s 1 -t {} --genotype -d 50 -m {}.bam -v {}_sniffles.vcf'.format(
-            SNIFFLES, THREADS, sample_normal, sample_normal
-        )
-        p5 = exec_command(cmd, detach=True)
+        p3.wait()
 
         logger.info('Variant calling with SVIM')
 
@@ -171,7 +163,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
                 SVIM, sample_tumor, GENOME_REF
             )
         )
-        p6 = exec_command(cmd, detach=True)
+        p4 = exec_command(cmd, detach=True)
 
         # Call variants with SVIM for Normal sample
 
@@ -180,7 +172,10 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
                 SVIM, sample_normal, GENOME_REF
             )
         )
-        p7 = exec_command(cmd, detach=True)
+        p5 = exec_command(cmd, detach=True)
+
+        p4.wait()
+        p5.wait()
 
         logger.info('Variant calling with CuteSV')
 
@@ -194,7 +189,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
                 CUTESV, THREADS, sample_tumor, GENOME_REF
             )
         )
-        p8 = exec_command(cmd, detach=True)
+        p6 = exec_command(cmd, detach=True)
 
         # Call variants with cuteSV for Normal sample
 
@@ -206,15 +201,28 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB):
                 CUTESV, THREADS, sample_normal, GENOME_REF
             )
         )
-        p9 = exec_command(cmd, detach=True)
+        p7 = exec_command(cmd, detach=True)
 
-        p3.wait()
-        p4.wait()
-        p5.wait()
         p6.wait()
         p7.wait()
+
+        # Call variants with SNIFFLES
+
+        logger.info('Variant calling with Sniffles')
+
+        cmd = '{} -s 1 -t {} --genotype -d 50 -m {}.bam -v {}_sniffles.vcf'.format(
+            SNIFFLES, THREADS, sample_tumor, sample_tumor
+        )
+        p8 = exec_command(cmd, detach=True)
+
+        cmd = '{} -s 1 -t {} --genotype -d 50 -m {}.bam -v {}_sniffles.vcf'.format(
+            SNIFFLES, THREADS, sample_normal, sample_normal
+        )
+        p9 = exec_command(cmd, detach=True)
+
         p8.wait()
         p9.wait()
+
 
         end_variant_time = datetime.datetime.now()
         total_variant_time = end_variant_time - start_variant_time

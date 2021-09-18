@@ -63,7 +63,7 @@ def reformat_svim(inp, out, columnid, qual):
         elif line.startswith('##') and 'ID=AD' in line:
             new_DV = line.replace(
                 'ID=AD,Number=R,Type=Integer,Description="Read depth for each allele"',
-                'ID=DV,Number=R,Type=Integer,Description="# of reads supporting the variant allele."',
+                'ID=DV,Number=1,Type=Integer,Description="# of reads supporting the variant allele."',
             )
             filtered_vcf.write(new_DV)
         elif line.startswith('##') and 'ID=CN' in line:

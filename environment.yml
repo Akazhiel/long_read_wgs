@@ -26,6 +26,7 @@ dependencies:
   - bioconda::ensembl-vep=102.0
   - bioconda::fastqc
   - bioconda::parasail-python
+  - bioconda::racon
   - pip
   - pip:
     - nanomonsv

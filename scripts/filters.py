@@ -15,9 +15,9 @@ def filter_somatic(inp, out, caller):
         token = calls[f'{caller}_Tumor']['DR']
         tumor_DR = token if type(token) is int else 0
         token = calls[f'{caller}_Normal']['DV']
-        normal_DV = token if type(token) is int else 0
+        normal_DV = token if type(token) is int else 0 
         token = calls[f'{caller}_Tumor']['DV']
-        tumor_DV = token if type(token) is int else 0
+        tumor_DV = token if type(token) is int else 0 
         tumor_DP = tumor_DR + tumor_DV
         normal_DP = normal_DR + normal_DV
         if ((tumor_DP and tumor_DV) >= 1 and normal_DP == 0) or (
