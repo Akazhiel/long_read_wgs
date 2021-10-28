@@ -11,14 +11,13 @@ dependencies:
   - conda-forge::biopython
   - bioconda::samtools
   - bioconda::minimap2=2.22
-  - bioconda::snpeff
+  - bioconda::snpeff=5.0
   - bioconda::svdb
-  - bioconda::sniffles
+  - bioconda::sniffles=1.0.12
   - bioconda::bedtools
   - bioconda::mhcflurry
   - bioconda::vcftools
   - bioconda::bcftools
-  - bioconda::nanofilt
   - bioconda::survivor
   - conda-forge::numpy
   - bioconda::cutesv
