@@ -129,23 +129,23 @@ def reformat_sniffles(inp, out, sampleid, columnid):
             filtered_vcf.write(line.replace(sampleid, columnid))
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
-            if 'IMPRECISE' not in line:
-                if 'DEL' in columns[headers.index('INFO')]:
-                    columns[headers.index('REF')] = 'N'
-                    columns[headers.index('ALT')] = '<DEL>'
-                    filtered_vcf.write('\t'.join(columns) + '\n')
-                elif 'INS' in columns[headers.index('INFO')]:
-                    columns[headers.index('INFO')] += ';SVINSSEQ={}'.format(
-                        columns[headers.index('ALT')]
-                    )
-                    columns[headers.index('ALT')] = '<INS>'
-                    filtered_vcf.write('\t'.join(columns) + '\n')
-                elif 'INVDUP' in columns[headers.index('ALT')]:
-                    columns[headers.index('ALT')] = '<INV>'
-                    columns[headers.index('INFO')] = columns[headers.index('INFO')].replace('INVDUP', 'INV')
-                    filtered_vcf.write('\t'.join(columns) + '\n')
-                else:
-                    filtered_vcf.write(line)
+            # if 'IMPRECISE' not in line:
+            if 'DEL' in columns[headers.index('INFO')]:
+                columns[headers.index('REF')] = 'N'
+                columns[headers.index('ALT')] = '<DEL>'
+                filtered_vcf.write('\t'.join(columns) + '\n')
+            elif 'INS' in columns[headers.index('INFO')]:
+                columns[headers.index('INFO')] += ';SVINSSEQ={}'.format(
+                    columns[headers.index('ALT')]
+                )
+                columns[headers.index('ALT')] = '<INS>'
+                filtered_vcf.write('\t'.join(columns) + '\n')
+            elif 'INVDUP' in columns[headers.index('ALT')]:
+                columns[headers.index('ALT')] = '<INV>'
+                columns[headers.index('INFO')] = columns[headers.index('INFO')].replace('INVDUP', 'INV')
+                filtered_vcf.write('\t'.join(columns) + '\n')
+            else:
+                filtered_vcf.write(line)
         else:
             filtered_vcf.write(line)
 
@@ -162,7 +162,7 @@ def reformat_cutesv(inp, out):
             filtered_vcf.write(line)
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
-            if 'IMPRECISE' not in line and columns[headers.index('QUAL')] != '.':
+            if columns[headers.index('QUAL')] != '.':
                 if 'DEL' in columns[headers.index('INFO')]:
                     columns[headers.index('REF')] = 'N'
                     columns[headers.index('ALT')] = '<DEL>'
@@ -280,7 +280,7 @@ def genomesv2vcf_convert(result_file, output_vcf, reference):
             # Duplication
             elif F["Chr_1"] == F["Chr_2"] and F["Dir_1"] == '-' and F["Dir_2"] == '+' and F["Pos_1"] != '1': 
 
-                tpos = int(F["Pos_1"]) - 1
+                tpos = int(F["Pos_1"])
                 tref = ref_tb.fetch(tchrom, tpos - 1, tpos)
                 if tref == '' or tref is None: continue
                 talt = "<DUP>"
@@ -332,7 +332,7 @@ def genomesv2vcf_convert(result_file, output_vcf, reference):
                 print(f"{tchrom2}\t{tpos2}\t{tid}_1\t{tref2}\t{talt2}\t{tqual}\t{tfilter}\t{tinfo2}\t{tformat_sample}", file = hout)
 
             else:
-                tpos = int(F["Pos_1"]) - 1
+                tpos = int(F["Pos_1"])
                 tref = ref_tb.fetch(tchrom, tpos - 1, tpos)
                 if tref == '' or tref is None: continue
                 talt = "<INV>"
