@@ -124,7 +124,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         p1.wait()
         p2.wait()
 
-        cmd = '{} get nanomon_vc/Tumor {}.bam {} --use_racon --control_prefix nanomon_vc/Normal --control_bam {}.bam'.format(
+        cmd = '{} get nanomon_vc/Tumor {}.bam {} --var_read_min_mapq 20 --use_racon --control_prefix nanomon_vc/Normal --control_bam {}.bam'.format(
             NANOMON, sample_tumor, GENOME_REF, sample_normal
         )
         p3 = exec_command(cmd, detach=True)
