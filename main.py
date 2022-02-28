@@ -133,14 +133,14 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         # Call variants with SVIM for Tumor sample
 
-        cmd = '{} --sample SVIM_Tumor --max_consensus_length 1000000 --symbolic_alleles svim_tumor/ {}.bam {}'.format(
+        cmd = '{} --sample SVIM_Tumor --min_sv_size 30 --max_consensus_length 1000000 --insertion_sequences --tandem_duplications_as_insertions --interspersed_duplications_as_insertions --symbolic_alleles svim_tumor/ {}.bam {}'.format(
             SVIM, sample_tumor, GENOME_REF
         )
         p4 = exec_command(cmd, detach=True)
 
         # Call variants with SVIM for Normal sample
 
-        cmd = '{} --sample SVIM_Normal --max_consensus_length 1000000 --symbolic_alleles svim_normal/ {}.bam {}'.format(
+        cmd = '{} --sample SVIM_Normal --min_sv_size 30 --max_consensus_length 1000000 --insertion_sequences --tandem_duplications_as_insertions --interspersed_duplications_as_insertions --symbolic_alleles svim_normal/ {}.bam {}'.format(
             SVIM, sample_normal, GENOME_REF
         )
         p5 = exec_command(cmd, detach=True)
@@ -152,8 +152,8 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         os.makedirs('cutesv_tumor')
 
         cmd = (
-            '{} -t {} -S CUTESV_Tumor -s 2 --genotype --max_cluster_bias_INS 100 --diff_ratio_merging_INS 0.3 --max_cluster_bias_DEL 100 '
-            '--diff_ratio_merging_DEL 0.3 {}.bam {} CUTESV_Tumor.vcf cutesv_tumor/'.format(
+            '{} -t {} -S CUTESV_Tumor -s 1 -L -1 --genotype --max_cluster_bias_INS 1000 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 1000 '
+            '--diff_ratio_merging_DEL 0.5 {}.bam {} CUTESV_Tumor.vcf cutesv_tumor/'.format(
                 CUTESV, THREADS, sample_tumor, GENOME_REF
             )
         )
@@ -164,8 +164,8 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         os.makedirs('cutesv_normal')
 
         cmd = (
-            '{} -t {} -S CUTESV_Normal -s 2 --genotype --max_cluster_bias_INS 100 --diff_ratio_merging_INS 0.3 --max_cluster_bias_DEL 100 '
-            '--diff_ratio_merging_DEL 0.3 {}.bam {} CUTESV_Normal.vcf cutesv_normal/'.format(
+            '{} -t {} -S CUTESV_Normal -s 1 -L -1 --genotype --max_cluster_bias_INS 1000 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 1000 '
+            '--diff_ratio_merging_DEL 0.5 {}.bam {} CUTESV_Normal.vcf cutesv_normal/'.format(
                 CUTESV, THREADS, sample_normal, GENOME_REF
             )
         )
@@ -181,14 +181,14 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         logger.info('Variant calling with Sniffles')
 
-        cmd = '{} -s 2 -t {} --genotype -d 50 -m {}.bam -v {}_sniffles.vcf'.format(
-            SNIFFLES, THREADS, sample_tumor, sample_tumor
+        cmd = '{} --minsupport 1 --symbolic --reference {} -t {} --genotype --minsvlen 30 --mapq 20 --qc-stdev-abs-max 0 --cluster-merge-pos 50 --input {}.bam --vcf {}_sniffles.vcf'.format(
+            SNIFFLES, GENOME_REF, THREADS, sample_tumor, sample_tumor
         )
         p8 = exec_command(cmd, detach=True)
         p8.wait()
 
-        cmd = '{} -s 2 -t {} --genotype -d 50 -m {}.bam -v {}_sniffles.vcf'.format(
-            SNIFFLES, THREADS, sample_normal, sample_normal
+        cmd = '{} --minsupport 1 --symbolic --reference {} -t {} --genotype --minsvlen 30 --mapq 20 --qc-stdev-abs-max 0 --cluster-merge-pos 50 --input {}.bam --vcf {}_sniffles.vcf'.format(
+            SNIFFLES, GENOME_REF, THREADS, sample_normal, sample_normal
         )
         p9 = exec_command(cmd, detach=True)
         p9.wait()
