@@ -133,14 +133,14 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         # Call variants with SVIM for Tumor sample
 
-        cmd = '{} --sample SVIM_Tumor --min_sv_size 30 --max_consensus_length 1000000 --insertion_sequences --tandem_duplications_as_insertions --interspersed_duplications_as_insertions --symbolic_alleles svim_tumor/ {}.bam {}'.format(
+        cmd = '{} --sample SVIM_Tumor --min_sv_size 30 --max_consensus_length 1000000 --insertion_sequences --symbolic_alleles svim_tumor/ {}.bam {}'.format(
             SVIM, sample_tumor, GENOME_REF
         )
         p4 = exec_command(cmd, detach=True)
 
         # Call variants with SVIM for Normal sample
 
-        cmd = '{} --sample SVIM_Normal --min_sv_size 30 --max_consensus_length 1000000 --insertion_sequences --tandem_duplications_as_insertions --interspersed_duplications_as_insertions --symbolic_alleles svim_normal/ {}.bam {}'.format(
+        cmd = '{} --sample SVIM_Normal --min_sv_size 30 --max_consensus_length 1000000 --insertion_sequences --symbolic_alleles svim_normal/ {}.bam {}'.format(
             SVIM, sample_normal, GENOME_REF
         )
         p5 = exec_command(cmd, detach=True)
