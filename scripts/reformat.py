@@ -110,23 +110,9 @@ def reformat_sniffles(inp, out, sampleid, columnid):
     vcf = open(inp, 'r')
     filtered_vcf = open(out, 'w')
     for line in vcf:
-        if line.startswith('##') and 'ID=SEQ' in line:
-            new_SEQ = line.replace(
-                '##INFO=<ID=SEQ,Number=1,Type=String,Description="Extracted sequence from the best representative read.">',
-                '##INFO=<ID=SVINSSEQ,Number=1,Type=String,Description="Sequence of insertion">',
-            )
+        if line.startswith('##') and 'INFO' in line:
+            new_SEQ = '##INFO=<ID=SVINSSEQ,Number=1,Type=String,Description="Sequence of insertion">'
             filtered_vcf.write(new_SEQ)
-        elif line.startswith('##FILTER'):
-            filtered_vcf.write('##FILTER=<ID=STRANDBIAS,Description="Strand is biased.">\n')
-            filtered_vcf.write(line)
-        elif line.startswith('##ALT') and 'TRA' in line:
-            new_BND = line.replace('TRA,Description="Translocation"', 'BND,Description="Breakend"')
-            filtered_vcf.write(new_BND)
-        elif line.startswith('##ALT') and 'INVDUP' in line:
-            continue
-        elif line.startswith('#CHROM'):
-            headers = line.strip().replace(sampleid, columnid).split('\t')
-            filtered_vcf.write(line.replace(sampleid, columnid))
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
             # if 'IMPRECISE' not in line:
@@ -139,10 +125,6 @@ def reformat_sniffles(inp, out, sampleid, columnid):
                     columns[headers.index('ALT')]
                 )
                 columns[headers.index('ALT')] = '<INS>'
-                filtered_vcf.write('\t'.join(columns) + '\n')
-            elif 'INVDUP' in columns[headers.index('ALT')]:
-                columns[headers.index('ALT')] = '<INV>'
-                columns[headers.index('INFO')] = columns[headers.index('INFO')].replace('INVDUP', 'INV')
                 filtered_vcf.write('\t'.join(columns) + '\n')
             else:
                 filtered_vcf.write(line)

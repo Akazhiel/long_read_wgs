@@ -181,13 +181,13 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         logger.info('Variant calling with Sniffles')
 
-        cmd = '{} --minsupport 1 --symbolic --reference {} -t {} --minsvlen 30 --mapq 20 --qc-stdev-abs-max 0 --cluster-merge-pos 50 --input {}.bam --vcf {}_sniffles.vcf'.format(
+        cmd = '{} --sample-id SNIFFLES_Tumor --minsupport 1 --reference {} -t {} --minsvlen 30 --mapq 20 --qc-stdev-abs-max 0 --cluster-merge-pos 50 --input {}.bam --vcf {}_sniffles.vcf'.format(
             SNIFFLES, GENOME_REF, THREADS, sample_tumor, sample_tumor
         )
         p8 = exec_command(cmd, detach=True)
         p8.wait()
 
-        cmd = '{} --minsupport 1 --symbolic --reference {} -t {} --minsvlen 30 --mapq 20 --qc-stdev-abs-max 0 --cluster-merge-pos 50 --input {}.bam --vcf {}_sniffles.vcf'.format(
+        cmd = '{} --sample-id SNIFFLES_Normal --minsupport 1 --reference {} -t {} --minsvlen 30 --mapq 20 --qc-stdev-abs-max 0 --cluster-merge-pos 50 --input {}.bam --vcf {}_sniffles.vcf'.format(
             SNIFFLES, GENOME_REF, THREADS, sample_normal, sample_normal
         )
         p9 = exec_command(cmd, detach=True)
@@ -241,8 +241,6 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
             args=(
                 '{}_sniffles.vcf'.format(sample_normal),
                 'tmp_sniffles_normal.vcf',
-                '{}.bam'.format(sample_normal),
-                'SNIFFLES_Normal',
             ),
         )
         p5 = mp.Process(
@@ -250,8 +248,6 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
             args=(
                 '{}_sniffles.vcf'.format(sample_tumor),
                 'tmp_sniffles_tumor.vcf',
-                '{}.bam'.format(sample_tumor),
-                'SNIFFLES_Tumor',
             ),
         )
 

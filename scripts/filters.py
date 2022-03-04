@@ -3,7 +3,7 @@
 """
 
 import vcfpy
-
+import numpy as np
 
 def filter_somatic(inp, out, caller):
     reader = vcfpy.Reader.from_path(inp)
@@ -20,7 +20,10 @@ def filter_somatic(inp, out, caller):
         tumor_DV = token if type(token) is int else 0
         tumor_DP = tumor_DR + tumor_DV
         normal_DP = normal_DR + normal_DV
-        if tumor_DP >= 10 and tumor_DV >= 7 and normal_DV <= 1:
+        tumor_VAF = np.around(tumor_DV/tumor_DP, 3)
+        normal_VAF = np.around(normal_DV/normal_DP, 3)
+        t2n_ratio = tumor_VAF/normal_VAF if normal_VAF != 0 else 5
+        if tumor_DP >= 10 and tumor_DV >= 7 and normal_DV <= 1 and t2n_ratio >= 5:
             writer.write_record(record)
 
 
