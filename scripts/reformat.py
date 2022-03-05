@@ -106,7 +106,7 @@ def reformat_svim(inp, out, columnid, qual):
     filtered_vcf.close()
 
 
-def reformat_sniffles(inp, out, sampleid, columnid):
+def reformat_sniffles(inp, out):
     vcf = open(inp, 'r')
     filtered_vcf = open(out, 'w')
     for line in vcf:
