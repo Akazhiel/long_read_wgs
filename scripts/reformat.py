@@ -116,18 +116,19 @@ def reformat_sniffles(inp, out):
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
             # if 'IMPRECISE' not in line:
-            if 'DEL' in columns[headers.index('INFO')]:
-                columns[headers.index('REF')] = 'N'
-                columns[headers.index('ALT')] = '<DEL>'
-                filtered_vcf.write('\t'.join(columns) + '\n')
-            elif 'INS' in columns[headers.index('INFO')]:
-                columns[headers.index('INFO')] += ';SVINSSEQ={}'.format(
-                    columns[headers.index('ALT')]
-                )
-                columns[headers.index('ALT')] = '<INS>'
-                filtered_vcf.write('\t'.join(columns) + '\n')
-            else:
-                filtered_vcf.write(line)
+        elif line.startswith('#CHROM'):
+            headers = line.strip().split('\t')
+            filtered_vcf.write(line)
+        if 'DEL' in columns[headers.index('INFO')]:
+            columns[headers.index('REF')] = 'N'
+            columns[headers.index('ALT')] = '<DEL>'
+            filtered_vcf.write('\t'.join(columns) + '\n')
+        elif 'INS' in columns[headers.index('INFO')]:
+            columns[headers.index('INFO')] += ';SVINSSEQ={}'.format(
+                columns[headers.index('ALT')]
+            )
+            columns[headers.index('ALT')] = '<INS>'
+            filtered_vcf.write('\t'.join(columns) + '\n')
         else:
             filtered_vcf.write(line)
 
