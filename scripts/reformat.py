@@ -110,11 +110,10 @@ def reformat_sniffles(inp, out):
     vcf = open(inp, 'r')
     filtered_vcf = open(out, 'w')
     for line in vcf:
-        if line.startswith('##') and 'INFO' in line:
+        if line.startswith('#CHROM'):
+            headers = line.strip().split('\t')
             new_SEQ = '##INFO=<ID=SVINSSEQ,Number=1,Type=String,Description="Sequence of insertion">\n'
             filtered_vcf.write(new_SEQ)
-        elif line.startswith('#CHROM'):
-            headers = line.strip().split('\t')
             filtered_vcf.write(line)
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
