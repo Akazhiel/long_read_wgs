@@ -111,7 +111,7 @@ def reformat_sniffles(inp, out):
     filtered_vcf = open(out, 'w')
     for line in vcf:
         if line.startswith('##') and 'INFO' in line:
-            new_SEQ = '##INFO=<ID=SVINSSEQ,Number=1,Type=String,Description="Sequence of insertion">'
+            new_SEQ = '##INFO=<ID=SVINSSEQ,Number=1,Type=String,Description="Sequence of insertion">\n'
             filtered_vcf.write(new_SEQ)
         elif line.startswith('#CHROM'):
             headers = line.strip().split('\t')
