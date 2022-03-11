@@ -128,6 +128,8 @@ def reformat_sniffles(inp, out):
                 )
                 columns[headers.index('ALT')] = '<INS>'
                 filtered_vcf.write('\t'.join(columns) + '\n')
+            else:
+                filtered_vcf.write(line)
         else:
             filtered_vcf.write(line)
 
