@@ -222,7 +222,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         # Merge individual SVIM calls and filter for somatic variants
 
         merge_variants(
-            ['tmp_svim_tumor.vcf', 'tmp_svim_normal.vcf'], 'svim_combined_calls.vcf', 10
+            ['tmp_svim_tumor.vcf', 'tmp_svim_normal.vcf'], 'svim_combined_calls.vcf', 50
         )
         filter_somatic('svim_combined_calls.vcf', 'svim_combined_calls_filtered.vcf', 'SVIM')
 
@@ -262,7 +262,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         merge_variants(
             ['tmp_sniffles_tumor.vcf', 'tmp_sniffles_normal.vcf'],
             'sniffles_combined_calls.vcf',
-            10,
+            50,
         )
 
         filter_somatic(
@@ -283,7 +283,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         # Merge individual CUTESV calls and filter for somatic variants
 
         merge_variants(
-            ['tmp_cutesv_tumor.vcf', 'tmp_cutesv_normal.vcf'], 'cutesv_combined_calls.vcf', 10
+            ['tmp_cutesv_tumor.vcf', 'tmp_cutesv_normal.vcf'], 'cutesv_combined_calls.vcf', 50
         )
 
         filter_somatic('cutesv_combined_calls.vcf', 'cutesv_combined_calls_filtered.vcf', 'CUTESV')
