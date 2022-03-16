@@ -23,7 +23,7 @@ def filter_somatic(inp, out, caller):
         tumor_VAF = np.around(tumor_DV/tumor_DP, 3) if tumor_DP != 0 else 0
         normal_VAF = np.around(normal_DV/normal_DP, 3) if normal_DP != 0 else 0
         t2n_ratio = tumor_VAF/normal_VAF if normal_VAF != 0 else 5
-        if tumor_DP >= 10 and tumor_DV >= 7 and normal_DV <= 1 and t2n_ratio >= 5:
+        if tumor_DP >= 10 and tumor_DV >= 7 and t2n_ratio >= 5:
             writer.write_record(record)
 
 
