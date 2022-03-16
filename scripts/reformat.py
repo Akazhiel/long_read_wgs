@@ -91,7 +91,7 @@ def reformat_svim(inp, out, columnid, qual):
                     )
                 else:
                     if 'DEL' in columns[headers.index('ALT')]:
-                        columns[headers.index('POS')] = int(columns[headers.index('POS')]) + 1
+                        columns[headers.index('POS')] = str(int(columns[headers.index('POS')]) + 1)
                     Format = (
                         columns[headers.index('FORMAT')].replace('DP', 'DR').replace('AD', 'DV')
                     )
@@ -152,7 +152,7 @@ def reformat_cutesv(inp, out):
                 if 'DEL' in columns[headers.index('INFO')]:
                     columns[headers.index('REF')] = 'N'
                     columns[headers.index('ALT')] = '<DEL>'
-                    columns[headers.index('POS')] = int(columns[headers.index('POS')]) + 1
+                    columns[headers.index('POS')] = str(int(columns[headers.index('POS')]) + 1)
                     filtered_vcf.write('\t'.join(columns) + '\n')
                 elif 'INS' in columns[headers.index('INFO')]:
                     columns[headers.index('REF')] = 'N'
