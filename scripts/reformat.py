@@ -83,9 +83,9 @@ def reformat_svim(inp, out, columnid, qual):
                         columns[headers.index('FORMAT')].replace('DP', 'DR').replace('AD', 'DV')
                     )
                     Format = re.split(':', Format)
-                    del Format[1]
+                    del Format[1:3]
                     Format_info = re.split(':|,', columns[headers.index(columnid)])
-                    del Format_info[1]
+                    del Format_info[1:3]
                     filtered_vcf.write(
                         '{}\t{}\t{}\n'.format(
                             '\t'.join(columns[0:8]), ':'.join(Format), ':'.join(Format_info)
