@@ -77,7 +77,7 @@ def reformat_svim(inp, out, columnid, qual):
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
             if int(columns[headers.index('QUAL')]) >= qual:
-                if 'DUP' in columns[headers.index('ALT')]:
+                if 'DUP:TANDEM' in columns[headers.index('ALT')]:
                     columns[headers.index('ALT')] = '<DUP>'
                     Format = (
                         columns[headers.index('FORMAT')].replace('DP', 'DR').replace('AD', 'DV')
