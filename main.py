@@ -133,14 +133,14 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         # Call variants with SVIM for Tumor sample
 
-        cmd = '{} --sample SVIM_Tumor --min_sv_size 30 --max_consensus_length 10000000 --insertion_sequences --symbolic_alleles svim_tumor/ {}.bam {}'.format(
+        cmd = '{} --sample SVIM_Tumor --min_sv_size 30 --max_consensus_length 10000000 --symbolic_alleles svim_tumor/ {}.bam {}'.format(
             SVIM, sample_tumor, GENOME_REF
         )
         p4 = exec_command(cmd, detach=True)
 
         # Call variants with SVIM for Normal sample
 
-        cmd = '{} --sample SVIM_Normal --min_sv_size 30 --max_consensus_length 10000000 --insertion_sequences --symbolic_alleles svim_normal/ {}.bam {}'.format(
+        cmd = '{} --sample SVIM_Normal --min_sv_size 30 --max_consensus_length 10000000 --symbolic_alleles svim_normal/ {}.bam {}'.format(
             SVIM, sample_normal, GENOME_REF
         )
         p5 = exec_command(cmd, detach=True)
@@ -204,20 +204,29 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         # Reformat SVIM VCF to follow Sniffles format and filter on QUAL
 
+        cmd = 'bcftools view -i "INFO/STD_POS=\'.\'" svim_tumor/variants.vcf > precise_svim_tumor.vcf'
+        p1 = exec_command(cmd, detach = True)
+
+        cmd = 'bcftools view -i "INFO/STD_POS=\'.\'" svim_normal/variants.vcf > precise_svim_normal.vcf'
+        p2 = exec_command(cmd, detach = True)
+
+        p1.wait()
+        p2.wait()
+
         p1 = mp.Process(
             target=reformat_svim,
-            args=('svim_tumor/variants.vcf', 'tmp_svim_tumor.vcf', 'SVIM_Tumor', 1),
+            args=('precise_svim_tumor.vcf', 'tmp_svim_tumor.vcf', 'SVIM_Tumor', 1),
         )
         p2 = mp.Process(
             target=reformat_svim,
-            args=('svim_normal/variants.vcf', 'tmp_svim_normal.vcf', 'SVIM_Normal', 1),
+            args=('precise_svim_normal.vcf', 'tmp_svim_normal.vcf', 'SVIM_Normal', 1),
         )
 
-        p1.start()
-        p2.start()
+        p3.start()
+        p4.start()
 
-        p1.join()
-        p2.join()
+        p3.join()
+        p4.join()
 
         # Merge individual SVIM calls and filter for somatic variants
 
@@ -236,26 +245,35 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         # Reformat Sniffles to add INS Seq on INFO field
 
-        p4 = mp.Process(
+        cmd = 'bcftools view -i "STDEV_POS=0.0" {}_sniffles.vcf > precise_sniffles_normal.vcf'.format(sample_normal)
+        p5 = exec_command(cmd, detach=True)
+
+        cmd = 'bcftools view -i "STDEV_POS=0.0" {}_sniffles.vcf > precise_sniffles_tumor.vcf'.format(sample_tumor)
+        p6 = exec_command(cmd, detach=True)
+
+        p5.wait()
+        p6.wait()
+
+        p7 = mp.Process(
             target=reformat_sniffles,
             args=(
-                '{}_sniffles.vcf'.format(sample_normal),
+                'precise_sniffles_normal.vcf',
                 'tmp_sniffles_normal.vcf',
             ),
         )
-        p5 = mp.Process(
+        p8 = mp.Process(
             target=reformat_sniffles,
             args=(
-                '{}_sniffles.vcf'.format(sample_tumor),
+                'precise_sniffles_tumor.vcf',
                 'tmp_sniffles_tumor.vcf',
             ),
         )
 
-        p4.start()
-        p5.start()
+        p7.start()
+        p8.start()
 
-        p4.join()
-        p5.join()
+        p7.join()
+        p8.join()
 
         # Merge individual SNIFFLES calls and filter for somatic variants
 
@@ -271,14 +289,24 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         # Reformat CuteSV
 
-        p6 = mp.Process(target=reformat_cutesv, args=('CUTESV_Normal.vcf', 'tmp_cutesv_normal.vcf'))
-        p7 = mp.Process(target=reformat_cutesv, args=('CUTESV_Tumor.vcf', 'tmp_cutesv_tumor.vcf'))
+        cmd = 'bcftools view -i "CIPOS=0" CUTESV_Normal.vcf > precise_cutesv_normal.vcf'
+        p9 = exec_command(cmd, detach = True)
 
-        p6.start()
-        p7.start()
+        cmd = 'bcftools view -i "CIPOS=0" CUTESV_Tumor.vcf > precise_cutesv_tumor.vcf'
+        p10 = exec_command(cmd, detach = True)
 
-        p6.join()
-        p7.join()
+        p9.wait()
+        p10.wait()
+
+
+        p11 = mp.Process(target=reformat_cutesv, args=('precise_cutesv_normal.vcf', 'tmp_cutesv_normal.vcf'))
+        p12 = mp.Process(target=reformat_cutesv, args=('precise_cutesv_tumor.vcf', 'tmp_cutesv_tumor.vcf'))
+
+        p11.start()
+        p12.start()
+
+        p11.join()
+        p12.join()
 
         # Merge individual CUTESV calls and filter for somatic variants
 
