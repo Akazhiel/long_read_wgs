@@ -213,11 +213,11 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         p1.wait()
         p2.wait()
 
-        p1 = mp.Process(
+        p3 = mp.Process(
             target=reformat_svim,
             args=('precise_svim_tumor.vcf', 'tmp_svim_tumor.vcf', 'SVIM_Tumor', 1),
         )
-        p2 = mp.Process(
+        p4 = mp.Process(
             target=reformat_svim,
             args=('precise_svim_normal.vcf', 'tmp_svim_normal.vcf', 'SVIM_Normal', 1),
         )
