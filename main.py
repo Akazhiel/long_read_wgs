@@ -207,11 +207,11 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         cmd = 'bcftools view -i "INFO/STD_POS=\'.\'" svim_tumor/variants.vcf > precise_svim_tumor.vcf'
         p1 = exec_command(cmd, detach = True)
 
-        cmd = 'bcftools view -i "INFO/STD_POS=\'.\'" svim_normal/variants.vcf > precise_svim_normal.vcf'
-        p2 = exec_command(cmd, detach = True)
+        # cmd = 'bcftools view -i "INFO/STD_POS=\'.\'" svim_normal/variants.vcf > precise_svim_normal.vcf'
+        # p2 = exec_command(cmd, detach = True)
 
         p1.wait()
-        p2.wait()
+        # p2.wait()
 
         p3 = mp.Process(
             target=reformat_svim,
@@ -219,7 +219,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         )
         p4 = mp.Process(
             target=reformat_svim,
-            args=('precise_svim_normal.vcf', 'tmp_svim_normal.vcf', 'SVIM_Normal', 1),
+            args=('svim_normal/variants.vcf', 'tmp_svim_normal.vcf', 'SVIM_Normal', 1),
         )
 
         p3.start()
@@ -245,19 +245,19 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         # Reformat Sniffles to add INS Seq on INFO field
 
-        cmd = 'bcftools view -i "STDEV_POS=0.0" {}_sniffles.vcf > precise_sniffles_normal.vcf'.format(sample_normal)
-        p5 = exec_command(cmd, detach=True)
+        # cmd = 'bcftools view -i "STDEV_POS=0.0" {}_sniffles.vcf > precise_sniffles_normal.vcf'.format(sample_normal)
+        # p5 = exec_command(cmd, detach=True)
 
         cmd = 'bcftools view -i "STDEV_POS=0.0" {}_sniffles.vcf > precise_sniffles_tumor.vcf'.format(sample_tumor)
         p6 = exec_command(cmd, detach=True)
 
-        p5.wait()
+        # p5.wait()
         p6.wait()
 
         p7 = mp.Process(
             target=reformat_sniffles,
             args=(
-                'precise_sniffles_normal.vcf',
+                '{}_sniffles.vcf'.format(sample_normal),
                 'tmp_sniffles_normal.vcf',
             ),
         )
@@ -289,17 +289,17 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         # Reformat CuteSV
 
-        cmd = 'bcftools view -i "CIPOS=0" CUTESV_Normal.vcf > precise_cutesv_normal.vcf'
-        p9 = exec_command(cmd, detach = True)
+        # cmd = 'bcftools view -i "CIPOS=0" CUTESV_Normal.vcf > precise_cutesv_normal.vcf'
+        # p9 = exec_command(cmd, detach = True)
 
         cmd = 'bcftools view -i "CIPOS=0" CUTESV_Tumor.vcf > precise_cutesv_tumor.vcf'
         p10 = exec_command(cmd, detach = True)
 
-        p9.wait()
+        # p9.wait()
         p10.wait()
 
 
-        p11 = mp.Process(target=reformat_cutesv, args=('precise_cutesv_normal.vcf', 'tmp_cutesv_normal.vcf'))
+        p11 = mp.Process(target=reformat_cutesv, args=('CUTESV_Normal.vcf', 'tmp_cutesv_normal.vcf'))
         p12 = mp.Process(target=reformat_cutesv, args=('precise_cutesv_tumor.vcf', 'tmp_cutesv_tumor.vcf'))
 
         p11.start()
