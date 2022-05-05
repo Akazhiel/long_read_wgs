@@ -91,6 +91,18 @@ def reformat_svim(inp, out, columnid, qual):
                             '\t'.join(columns[0:8]), ':'.join(Format), ':'.join(Format_info)
                         )
                     )
+                elif 'DUP:INT' in columns[headers.index('ALT')]:
+                    columns[headers.index('ALT')] = '<DUP>'
+                    Format = (
+                        columns[headers.index('FORMAT')].replace('DP', 'DR').replace('AD', 'DV')
+                    )
+                    Format_info = re.split(':|,', columns[headers.index(columnid)])
+                    del Format_info[1]
+                    filtered_vcf.write(
+                        '{}\t{}\t{}\n'.format(
+                            '\t'.join(columns[0:8]), Format, ':'.join(Format_info)
+                        )
+                    )
                 else:
                     if 'DEL' in columns[headers.index('ALT')]:
                         columns[headers.index('POS')] = str(int(columns[headers.index('POS')]) + 1)
@@ -121,12 +133,16 @@ def reformat_sniffles(inp, out):
             filtered_vcf.write(line)
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
-            # if 'IMPRECISE' not in line:
             if 'DEL' in columns[headers.index('INFO')]:
                 columns[headers.index('REF')] = 'N'
                 columns[headers.index('ALT')] = '<DEL>'
                 filtered_vcf.write('\t'.join(columns) + '\n')
             elif 'INS' in columns[headers.index('INFO')]:
+                columns[headers.index('POS')] = str(int(columns[headers.index('POS')]) - 1)
+                INFO = columns[headers.index('INFO')].split(';')
+                pos_idx = [i for i, x in enumerate(INFO) if x.startswith('END')]
+                INFO[pos_idx] = 'END=' + str(int(INFO[3].split('=')[1]) - 1)
+                columns[headers.index('INFO')] = ';'.join(INFO)
                 columns[headers.index('INFO')] += ';SVINSSEQ={}'.format(
                     columns[headers.index('ALT')]
                 )
@@ -157,6 +173,7 @@ def reformat_cutesv(inp, out):
                     columns[headers.index('POS')] = str(int(columns[headers.index('POS')]) + 1)
                     filtered_vcf.write('\t'.join(columns) + '\n')
                 elif 'INS' in columns[headers.index('INFO')]:
+                    columns[headers.index('POS')] = str(int(columns[headers.index('POS')]) - 1)
                     columns[headers.index('REF')] = 'N'
                     columns[headers.index('INFO')] += ';SVINSSEQ={}'.format(
                         columns[headers.index('ALT')]
