@@ -123,6 +123,7 @@ def reformat_svim(inp, out, columnid, qual):
 
 
 def reformat_sniffles(inp, out):
+    print(inp, out)
     vcf = open(inp, 'r')
     filtered_vcf = open(out, 'w')
     for line in vcf:
@@ -140,8 +141,8 @@ def reformat_sniffles(inp, out):
             elif 'INS' in columns[headers.index('INFO')]:
                 columns[headers.index('POS')] = str(int(columns[headers.index('POS')]) - 1)
                 INFO = columns[headers.index('INFO')].split(';')
-                pos_idx = [i for i, x in enumerate(INFO) if x.startswith('END')]
-                INFO[pos_idx] = 'END=' + str(int(INFO[3].split('=')[1]) - 1)
+                pos_idx = [i for i, x in enumerate(INFO) if x.startswith('END')][0]
+                INFO[pos_idx] = 'END=' + str(int(INFO[pos_idx].split('=')[1]) - 1)
                 columns[headers.index('INFO')] = ';'.join(INFO)
                 columns[headers.index('INFO')] += ';SVINSSEQ={}'.format(
                     columns[headers.index('ALT')]
