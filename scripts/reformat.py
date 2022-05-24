@@ -123,7 +123,6 @@ def reformat_svim(inp, out, columnid, qual):
 
 
 def reformat_sniffles(inp, out):
-    print(inp, out)
     vcf = open(inp, 'r')
     filtered_vcf = open(out, 'w')
     for line in vcf:

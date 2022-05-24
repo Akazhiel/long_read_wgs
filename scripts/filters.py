@@ -4,6 +4,7 @@
 
 import vcfpy
 import numpy as np
+import pandas as pd
 
 def filter_somatic(inp, out, caller):
     reader = vcfpy.Reader.from_path(inp)
@@ -34,3 +35,16 @@ def filter_callers(inp, out, num_callers):
         called = [x for x in record.calls if x.data['DR'] is not None and 'Normal' not in x.sample]
         if len(called) >= num_callers:
             writer.write_record(record)
+
+def prioritize_variants(annot_sv_df):
+    variants = pd.read_csv(annot_sv_df, sep = "\t").iloc[:, :35]
+    variants[["Location1", "Location2"]] = variants["Location"].str.split('-', expand=True)
+    variants = variants[variants.Location != 'txStart-txEnd']
+    variants = variants[~variants.apply(lambda x: x['Location1'] == x['Location2'] and 'intron' in x['Location'], axis = 1)]
+    variants = variants[~variants.apply(lambda x: x['SV_type'] == 'DEL' and 'txStart' in x['Location1'] , axis = 1)]
+    variants['Priority'] = variants.apply(lambda x: 2 if (x['SV_type'] == 'DEL' and 'txEnd' in x['Location2']) else 3 if (x['SV_type'] not in ['INS', 'DEL']) else 1, axis = 1)
+    variants['SV_chrom'] = 'chr' + variants['SV_chrom'].astype(str)
+    variants['Frameshift'] = variants['Frameshift'].map({"yes":True,"no":False})
+    variants.to_csv('annotsv_prioritized.tsv', sep="\t", index=False)
+    variants = variants[variants.Priority == 1]
+    return variants

@@ -26,9 +26,10 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 from scripts.__version__ import version
 from scripts.common import *
-from scripts.filters import filter_somatic, filter_callers
+from scripts.filters import filter_somatic, filter_callers, prioritize_variants
 from scripts.reformat import *
 from scripts.vcfmerge import merge_variants
+from scripts.hgvs_notations import *
 
 
 def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NUM_CALLERS, WINDOW):
@@ -204,22 +205,13 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         # Reformat SVIM VCF to follow Sniffles format and filter on QUAL
 
-        cmd = 'bcftools view -i "INFO/STD_POS=\'.\'" svim_tumor/variants.vcf > precise_svim_tumor.vcf'
-        p1 = exec_command(cmd, detach = True)
-
-        # cmd = 'bcftools view -i "INFO/STD_POS=\'.\'" svim_normal/variants.vcf > precise_svim_normal.vcf'
-        # p2 = exec_command(cmd, detach = True)
-
-        p1.wait()
-        # p2.wait()
-
         p3 = mp.Process(
             target=reformat_svim,
-            args=('precise_svim_tumor.vcf', 'tmp_svim_tumor.vcf', 'SVIM_Tumor', 1),
+            args=('svim_tumor/variants.vcf', 'tmp_svim_tumor.vcf', 'SVIM_Tumor', 1),
         )
         p4 = mp.Process(
             target=reformat_svim,
-            args=('svim_normal/variants.vcf', 'tmp_svim_normal.vcf', 'SVIM_Normal', 10),
+            args=('svim_normal/variants.vcf', 'tmp_svim_normal.vcf', 'SVIM_Normal', 1),
         )
 
         p3.start()
@@ -228,10 +220,30 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         p3.join()
         p4.join()
 
+        # Re-genotype SVIM using Sniffles
+
+        cmd = f'{SNIFFLES} sniffles --input {sample_tumor}.bam --genotype-vcf tmp_svim_tumor.vcf --vcf svim_tumor_regenotype.vcf -t {THREADS}'
+
+        reg1 = exec_command(cmd, detach=True)
+
+        cmd = f'{SNIFFLES} sniffles --input {sample_normal}.bam --genotype-vcf tmp_svim_normal.vcf --vcf svim_normal_regenotype.vcf -t {THREADS}'
+
+        reg2 = exec_command(cmd, detach=True)
+
+        reg1.wait()
+        reg2.wait()
+
+        # Filter variants in tumor vcf to keep only precise variants.
+
+        cmd = f'{BCFTOOLS} view -i "INFO/STD_POS=\'.\'" svim_tumor_regenotype.vcf > precise_svim_tumor.vcf'
+        p1 = exec_command(cmd, detach = True)
+
+        p1.wait()
+
         # Merge individual SVIM calls and filter for somatic variants
 
         merge_variants(
-            ['tmp_svim_tumor.vcf', 'tmp_svim_normal.vcf'], 'svim_combined_calls.vcf', 50
+            ['precise_svim_tumor.vcf', 'svim_normal_regenotype.vcf'], 'svim_combined_calls.vcf', 50
         )
         filter_somatic('svim_combined_calls.vcf', 'svim_combined_calls_filtered.vcf', 'SVIM')
 
@@ -245,10 +257,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         # Reformat Sniffles to add INS Seq on INFO field
 
-        # cmd = 'bcftools view -i "STDEV_POS=0.0" {}_sniffles.vcf > precise_sniffles_normal.vcf'.format(sample_normal)
-        # p5 = exec_command(cmd, detach=True)
-
-        cmd = 'bcftools view -i "STDEV_POS=0.0" {}_sniffles.vcf > precise_sniffles_tumor.vcf'.format(sample_tumor)
+        cmd = f'{BCFTOOLS} view -i "STDEV_POS=0.0" {sample_tumor}_sniffles.vcf > precise_sniffles_tumor.vcf'
         p6 = exec_command(cmd, detach=True)
 
         # p5.wait()
@@ -289,10 +298,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         # Reformat CuteSV
 
-        # cmd = 'bcftools view -i "CIPOS=0" CUTESV_Normal.vcf > precise_cutesv_normal.vcf'
-        # p9 = exec_command(cmd, detach = True)
-
-        cmd = 'bcftools view -i "CIPOS=0" CUTESV_Tumor.vcf > precise_cutesv_tumor.vcf'
+        cmd = f'{BCFTOOLS} view -i "CIPOS=0" CUTESV_Tumor.vcf > precise_cutesv_tumor.vcf'
         p10 = exec_command(cmd, detach = True)
 
         # p9.wait()
@@ -340,32 +346,19 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         start_annotation_time = datetime.datetime.now()
         logger.info('Starting annotation: {}'.format(start_annotation_time))
 
-        try:
-            assert SNPEFFDB in [
-                'hg38',
-                'hg19',
-            ], 'Database error: Wrong database provided, got {}; expected one of these two: hg38 or hg19.'.format(
-                SNPEFFDB
-            )
+        # Annotate variants using AnnotSV with latest ENSEMBL release
 
-            if SNPEFFDB == 'hg38':
+        cmd = f'{ANNOTSV} -tx ENSEMBL -SVinputFile combined_calls_filtered.vcf -SVminSize 30 -outputFile annotsv_ensembl.tsv -outputDir . -annotationMode split -genomeBuild GRCh38'
+        exec_command(cmd)
 
-                cmd = '{} -Xmx16g -csvStats combined_calls_snpEff.csv -v GRCh38.99 combined_calls_filtered.vcf > annotated_{}.vcf'.format(
-                    SNPEFF, SNPEFFDB
-                )
-                exec_command(cmd)
+        # Prirotize variants according to breakpoints.
 
-            elif SNPEFFDB == 'hg19':
+        annotsv_prio = prioritize_variants('annotsv_ensembl.tsv')
 
-                cmd = '{} -Xmx16g -csvStats combined_calls_snpEff.csv -v GRCh37.75 combined_calls_filtered.vcf > annotated_{}.vcf'.format(
-                    SNPEFF, SNPEFFDB
-                )
-                exec_command(cmd)
+        variants = add_variant_hgvs(annotsv_prio)
 
-        except AssertionError as ae:
-            print(ae)
-            logger.error(ae)
-            sys.exit(-1)
+        for variant in variants:
+            create_epitode(variant)
 
         end_annotation_time = datetime.datetime.now()
         total_annotation_time = end_annotation_time - start_annotation_time
