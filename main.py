@@ -222,11 +222,11 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         # Re-genotype SVIM using Sniffles
 
-        cmd = f'{SNIFFLES} sniffles --input {sample_tumor}.bam --genotype-vcf tmp_svim_tumor.vcf --vcf svim_tumor_regenotype.vcf -t {THREADS}'
+        cmd = f'{SNIFFLES} --input {sample_tumor}.bam --genotype-vcf tmp_svim_tumor.vcf --vcf svim_tumor_regenotype.vcf -t {THREADS}'
 
         reg1 = exec_command(cmd, detach=True)
 
-        cmd = f'{SNIFFLES} sniffles --input {sample_normal}.bam --genotype-vcf tmp_svim_normal.vcf --vcf svim_normal_regenotype.vcf -t {THREADS}'
+        cmd = f'{SNIFFLES} --input {sample_normal}.bam --genotype-vcf tmp_svim_normal.vcf --vcf svim_normal_regenotype.vcf -t {THREADS}'
 
         reg2 = exec_command(cmd, detach=True)
 
