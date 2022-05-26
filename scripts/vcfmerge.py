@@ -2,8 +2,8 @@
 @author: Jonatan González Rodríguez <jonatan.gonzalez.r@outlook.com>
 """
 
-from scripts.tools import *
-from scripts.common import exec_command
+from tools import *
+from common import exec_command
 
 
 def merge_variants(inp, out, distance):

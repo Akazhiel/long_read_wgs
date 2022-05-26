@@ -25,11 +25,13 @@ import time
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 from scripts.__version__ import version
-from scripts.common import *
+from scripts.common import exec_command
 from scripts.filters import filter_somatic, filter_callers, prioritize_variants
 from scripts.reformat import *
 from scripts.vcfmerge import merge_variants
-from scripts.hgvs_notations import *
+from scripts.hgvs_notations import add_variant_hgvs
+from scripts.tools import *
+from scripts.epitope import create_epitope
 
 
 def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NUM_CALLERS, WINDOW):
@@ -207,7 +209,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         p3 = mp.Process(
             target=reformat_svim,
-            args=('svim_tumor/variants.vcf', 'tmp_svim_tumor.vcf', 'SVIM_Tumor', 1),
+            args=('svim_tumor/variants.vcf', 'tmp_svim_tumor.vcf', 'SVIM_Tumor', 10),
         )
         p4 = mp.Process(
             target=reformat_svim,
@@ -222,11 +224,11 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         # Re-genotype SVIM using Sniffles
 
-        cmd = f'{SNIFFLES} --input {sample_tumor}.bam --genotype-vcf tmp_svim_tumor.vcf --vcf svim_tumor_regenotype.vcf -t {THREADS}'
+        cmd = f'{SNIFFLES} --input {sample_tumor}.bam --allow-overwrite --genotype-vcf tmp_svim_tumor.vcf --vcf svim_tumor_regenotype.vcf -t {THREADS}'
 
         reg1 = exec_command(cmd, detach=True)
 
-        cmd = f'{SNIFFLES} --input {sample_normal}.bam --genotype-vcf tmp_svim_normal.vcf --vcf svim_normal_regenotype.vcf -t {THREADS}'
+        cmd = f'{SNIFFLES} --input {sample_normal}.bam --allow-overwrite --genotype-vcf tmp_svim_normal.vcf --vcf svim_normal_regenotype.vcf -t {THREADS}'
 
         reg2 = exec_command(cmd, detach=True)
 
@@ -351,18 +353,19 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         cmd = f'{ANNOTSV} -tx ENSEMBL -SVinputFile combined_calls_filtered.vcf -SVminSize 30 -outputFile annotsv_ensembl.tsv -outputDir . -annotationMode split -genomeBuild GRCh38'
         exec_command(cmd)
 
+        end_annotation_time = datetime.datetime.now()
+        total_annotation_time = end_annotation_time - start_annotation_time
+        logger.info('Total annotation time: {}'.format(total_annotation_time))
+
         # Prirotize variants according to breakpoints.
+    if 'epitope' in STEPS:
 
         annotsv_prio = prioritize_variants('annotsv_ensembl.tsv')
 
         variants = add_variant_hgvs(annotsv_prio)
 
         for variant in variants:
-            create_epitode(variant)
-
-        end_annotation_time = datetime.datetime.now()
-        total_annotation_time = end_annotation_time - start_annotation_time
-        logger.info('Total annotation time: {}'.format(total_annotation_time))
+            create_epitope(variant)
 
     end_pipeline_time = datetime.datetime.now()
     total_pipeline_time = end_pipeline_time - start_pipeline_time
