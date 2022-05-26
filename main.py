@@ -29,9 +29,9 @@ from scripts.common import exec_command
 from scripts.filters import filter_somatic, filter_callers, prioritize_variants
 from scripts.reformat import *
 from scripts.vcfmerge import merge_variants
-from scripts.hgvs_notations import add_variant_hgvs
+# from scripts.hgvs_notations import add_variant_hgvs
 from scripts.tools import *
-from scripts.epitope import create_epitope
+# from scripts.epitope import create_epitope
 
 
 def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NUM_CALLERS, WINDOW):
@@ -358,14 +358,14 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         logger.info('Total annotation time: {}'.format(total_annotation_time))
 
         # Prirotize variants according to breakpoints.
-    if 'epitope' in STEPS:
+    # if 'epitope' in STEPS:
 
-        annotsv_prio = prioritize_variants('annotsv_ensembl.tsv')
+    #     annotsv_prio = prioritize_variants('annotsv_ensembl.tsv')
 
-        variants = add_variant_hgvs(annotsv_prio)
+    #     variants = add_variant_hgvs(annotsv_prio)
 
-        for variant in variants:
-            create_epitope(variant)
+    #     for variant in variants:
+    #         create_epitope(variant)
 
     end_pipeline_time = datetime.datetime.now()
     total_pipeline_time = end_pipeline_time - start_pipeline_time
