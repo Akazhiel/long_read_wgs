@@ -2,7 +2,7 @@
 @author: Jonatan González Rodríguez <jonatan.gonzalez.r@outlook.com>
 """
 
-from tools import *
+from scripts.tools import *
 from common import exec_command
 
 
