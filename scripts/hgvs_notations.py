@@ -3,7 +3,7 @@ import hgvs.parser
 import pandas as pd
 from cdot.hgvs.dataproviders import JSONDataProvider
 from hgvs.transcriptmapper import HGVSUsageError
-from common import Variant
+from scripts.common import Variant
 
 # Load chromosome map to map UCSC identifiers to RefSeq
 

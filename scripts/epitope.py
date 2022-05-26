@@ -1,5 +1,5 @@
 from pyensembl import EnsemblRelease
-from common import Variant
+from scripts.common import Variant
 from Bio.Seq import translate
 
 def translate_dna(seq):
