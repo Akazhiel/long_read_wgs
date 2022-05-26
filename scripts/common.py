@@ -5,9 +5,6 @@
 import logging
 import subprocess
 import sys
-import pandas as pd
-
-from tools import *
 
 class Variant:
     def __init__(self):
