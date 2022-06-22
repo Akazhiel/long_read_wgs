@@ -127,7 +127,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         p1.wait()
         p2.wait()
 
-        cmd = '{} get nanomon_vc/Tumor {}.bam {} --var_read_min_mapq 20 --use_racon --control_prefix nanomon_vc/Normal --control_bam {}.bam'.format(
+        cmd = '{} get nanomon_vc/Tumor {}.bam {} --var_read_min_mapq 20 --min_tumor_variant_read_num 2 --use_racon --control_prefix nanomon_vc/Normal --control_bam {}.bam'.format(
             NANOMON, sample_tumor, GENOME_REF, sample_normal
         )
         p3 = exec_command(cmd, detach=True)
@@ -155,8 +155,8 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         os.makedirs('cutesv_tumor')
 
         cmd = (
-            '{} -t {} -S CUTESV_Tumor -s 2 -L -1 --genotype --max_cluster_bias_INS 100 --diff_ratio_merging_INS 0.3 --max_cluster_bias_DEL 100 '
-            '--diff_ratio_merging_DEL 0.3 {}.bam {} CUTESV_Tumor.vcf cutesv_tumor/'.format(
+            '{} -t {} -S CUTESV_Tumor -s 2 -L -1 -md 5 --genotype --max_cluster_bias_INS 1000 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 1000 '
+            '--diff_ratio_merging_DEL 0. {}.bam {} CUTESV_Tumor.vcf cutesv_tumor/'.format(
                 CUTESV, THREADS, sample_tumor, GENOME_REF
             )
         )
@@ -167,8 +167,8 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         os.makedirs('cutesv_normal')
 
         cmd = (
-            '{} -t {} -S CUTESV_Normal -s 2 -L -1 --genotype --max_cluster_bias_INS 100 --diff_ratio_merging_INS 0.3 --max_cluster_bias_DEL 100 '
-            '--diff_ratio_merging_DEL 0.3 {}.bam {} CUTESV_Normal.vcf cutesv_normal/'.format(
+            '{} -t {} -S CUTESV_Normal -s 2 -L -1 -md 5 --genotype --max_cluster_bias_INS 1000 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 1000 '
+            '--diff_ratio_merging_DEL 0. {}.bam {} CUTESV_Normal.vcf cutesv_normal/'.format(
                 CUTESV, THREADS, sample_normal, GENOME_REF
             )
         )
@@ -184,13 +184,13 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         logger.info('Variant calling with Sniffles')
 
-        cmd = '{} --sample-id SNIFFLES_Tumor --minsupport 2 --reference {} -t {} --minsvlen 30 --mapq 20 --input {}.bam --vcf {}_sniffles.vcf'.format(
+        cmd = '{} --sample-id SNIFFLES_Tumor --minsupport 2 --qc-stdev-abs-max 5 --quiet --reference {} -t {} --minsvlen 30 --mapq 20 --input {}.bam --vcf {}_sniffles.vcf'.format(
             SNIFFLES, GENOME_REF, THREADS, sample_tumor, sample_tumor
         )
         p8 = exec_command(cmd, detach=True)
         p8.wait()
 
-        cmd = '{} --sample-id SNIFFLES_Normal --minsupport 2 --reference {} -t {} --minsvlen 30 --mapq 20 --input {}.bam --vcf {}_sniffles.vcf'.format(
+        cmd = '{} --sample-id SNIFFLES_Normal --minsupport 2 --qc-stdev-abs-max 5 --quiet --reference {} -t {} --minsvlen 30 --mapq 20 --input {}.bam --vcf {}_sniffles.vcf'.format(
             SNIFFLES, GENOME_REF, THREADS, sample_normal, sample_normal
         )
         p9 = exec_command(cmd, detach=True)
@@ -224,11 +224,11 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         # Re-genotype SVIM using Sniffles
 
-        cmd = f'{SNIFFLES} --input {sample_tumor}.bam --allow-overwrite --genotype-vcf tmp_svim_tumor.vcf --vcf svim_tumor_regenotype.vcf -t {THREADS}'
+        cmd = f'{SNIFFLES} --input {sample_tumor}.bam --allow-overwrite --genotype-vcf --quiet tmp_svim_tumor.vcf --vcf svim_tumor_regenotype.vcf -t {THREADS}'
 
         reg1 = exec_command(cmd, detach=True)
 
-        cmd = f'{SNIFFLES} --input {sample_normal}.bam --allow-overwrite --genotype-vcf tmp_svim_normal.vcf --vcf svim_normal_regenotype.vcf -t {THREADS}'
+        cmd = f'{SNIFFLES} --input {sample_normal}.bam --allow-overwrite --genotype-vcf --quiet tmp_svim_normal.vcf --vcf svim_normal_regenotype.vcf -t {THREADS}'
 
         reg2 = exec_command(cmd, detach=True)
 
