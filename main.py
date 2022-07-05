@@ -114,23 +114,23 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         start_variant_time = datetime.datetime.now()
         logger.info('Starting variant calling: {}'.format(start_variant_time))
-        logger.info('Variant calling with nanomonSV')
+        # logger.info('Variant calling with nanomonSV')
 
-        cmd = '{} parse {}.bam nanomon_vc/Tumor'.format(NANOMON, sample_tumor)
-        p1 = exec_command(cmd, detach=True)
+        # cmd = '{} parse {}.bam nanomon_vc/Tumor'.format(NANOMON, sample_tumor)
+        # p1 = exec_command(cmd, detach=True)
 
-        time.sleep(1)  # Required so the parse step by nanomon is executed in parallel but doesn't break due to the same folder name
+        # time.sleep(1)  # Required so the parse step by nanomon is executed in parallel but doesn't break due to the same folder name
 
-        cmd = '{} parse {}.bam nanomon_vc/Normal'.format(NANOMON, sample_normal)
-        p2 = exec_command(cmd, detach=True)
+        # cmd = '{} parse {}.bam nanomon_vc/Normal'.format(NANOMON, sample_normal)
+        # p2 = exec_command(cmd, detach=True)
 
-        p1.wait()
-        p2.wait()
+        # p1.wait()
+        # p2.wait()
 
-        cmd = '{} get nanomon_vc/Tumor {}.bam {} --var_read_min_mapq 20 --min_tumor_variant_read_num 2 --use_racon --control_prefix nanomon_vc/Normal --control_bam {}.bam'.format(
-            NANOMON, sample_tumor, GENOME_REF, sample_normal
-        )
-        p3 = exec_command(cmd, detach=True)
+        # cmd = '{} get nanomon_vc/Tumor {}.bam {} --var_read_min_mapq 20 --min_tumor_variant_read_num 2 --use_racon --control_prefix nanomon_vc/Normal --control_bam {}.bam'.format(
+        #     NANOMON, sample_tumor, GENOME_REF, sample_normal
+        # )
+        # p3 = exec_command(cmd, detach=True)
 
         logger.info('Variant calling with SVIM')
 
@@ -174,7 +174,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         )
         p7 = exec_command(cmd, detach=True)
 
-        p3.wait()
+        # p3.wait()
         p4.wait()
         p5.wait()
         p6.wait()
@@ -251,11 +251,11 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         # Reformat nanomonsv VCF to follow Sniffles format
 
-        genomesv2vcf_convert('nanomon_vc/Tumor.nanomonsv.result.txt', 'Tumor.nanomonsv.result.vcf', GENOME_REF)
+        # genomesv2vcf_convert('nanomon_vc/Tumor.nanomonsv.result.txt', 'Tumor.nanomonsv.result.vcf', GENOME_REF)
 
-        reformat_nanomonsv('Tumor.nanomonsv.result.vcf', 'tmp_nanomonsv.vcf')
+        # reformat_nanomonsv('Tumor.nanomonsv.result.vcf', 'tmp_nanomonsv.vcf')
 
-        filter_somatic('tmp_nanomonsv.vcf', 'nanomonsv_filtered.vcf', 'NANOMON')
+        # filter_somatic('tmp_nanomonsv.vcf', 'nanomonsv_filtered.vcf', 'NANOMON')
 
         # Reformat Sniffles to add INS Seq on INFO field
 
@@ -328,9 +328,8 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         merge_variants(
             [
-                'nanomonsv_filtered.vcf',
-                'svim_combined_calls_filtered.vcf',
                 'sniffles_combined_calls_filtered.vcf',
+                'svim_combined_calls_filtered.vcf',
                 'cutesv_combined_calls_filtered.vcf',
             ],
             'combined_calls.vcf',
