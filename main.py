@@ -156,7 +156,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         cmd = (
             '{} -t {} -S CUTESV_Tumor -s 2 -L -1 -md 5 --genotype --max_cluster_bias_INS 1000 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 1000 '
-            '--diff_ratio_merging_DEL 0. {}.bam {} CUTESV_Tumor.vcf cutesv_tumor/'.format(
+            '--diff_ratio_merging_DEL 0.5 --remain_reads_ratio 0.8 {}.bam {} CUTESV_Tumor.vcf cutesv_tumor/'.format(
                 CUTESV, THREADS, sample_tumor, GENOME_REF
             )
         )
@@ -168,7 +168,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         cmd = (
             '{} -t {} -S CUTESV_Normal -s 2 -L -1 -md 5 --genotype --max_cluster_bias_INS 1000 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 1000 '
-            '--diff_ratio_merging_DEL 0. {}.bam {} CUTESV_Normal.vcf cutesv_normal/'.format(
+            '--diff_ratio_merging_DEL 0.5 --remain_reads_ratio 0.8 {}.bam {} CUTESV_Normal.vcf cutesv_normal/'.format(
                 CUTESV, THREADS, sample_normal, GENOME_REF
             )
         )
