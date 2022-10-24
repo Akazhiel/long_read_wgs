@@ -184,13 +184,13 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         logger.info('Variant calling with Sniffles')
 
-        cmd = '{} --sample-id SNIFFLES_Tumor --minsupport 2 --qc-stdev-abs-max 5 --quiet --reference {} -t {} --minsvlen 30 --mapq 20 --input {}.bam --vcf {}_sniffles.vcf'.format(
+        cmd = '{} --sample-id SNIFFLES_Tumor --minsupport 2 --allow-overwrite --qc-stdev-abs-max 5 --quiet --reference {} -t {} --minsvlen 30 --mapq 20 --input {}.bam --vcf {}_sniffles.vcf'.format(
             SNIFFLES, GENOME_REF, THREADS, sample_tumor, sample_tumor
         )
         p8 = exec_command(cmd, detach=True)
         p8.wait()
 
-        cmd = '{} --sample-id SNIFFLES_Normal --minsupport 2 --qc-stdev-abs-max 5 --quiet --reference {} -t {} --minsvlen 30 --mapq 20 --input {}.bam --vcf {}_sniffles.vcf'.format(
+        cmd = '{} --sample-id SNIFFLES_Normal --minsupport 2 --allow-overwrite --qc-stdev-abs-max 5 --quiet --reference {} -t {} --minsvlen 30 --mapq 20 --input {}.bam --vcf {}_sniffles.vcf'.format(
             SNIFFLES, GENOME_REF, THREADS, sample_normal, sample_normal
         )
         p9 = exec_command(cmd, detach=True)
