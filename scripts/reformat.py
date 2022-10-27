@@ -98,7 +98,8 @@ def reformat_svim(inp, out, columnid, qual):
                             '\t'.join(columns[0:8]), Format, ':'.join(Format_info)
                         )
                     )
-                elif 'DEL' in columns[headers.index('ALT')]:
+                elif 'DEL' in columns[headers.index('INFO')]:
+                    columns[headers.index('REF')] = 'N'
                     columns[headers.index('ALT')] = '<DEL>'
                     columns[headers.index('POS')] = str(int(columns[headers.index('POS')]) + 1)
                     filtered_vcf.write(
@@ -106,7 +107,7 @@ def reformat_svim(inp, out, columnid, qual):
                             '\t'.join(columns[0:8]), Format, ':'.join(Format_info)
                         )
                     )
-                elif 'INS' in columns[headers.index('ALT')]:
+                elif 'INS' in columns[headers.index('INFO')]:
                     columns[headers.index('INFO')] += ';SVINSSEQ={}'.format(columns[headers.index('ALT')])
                     columns[headers.index('ALT')] = '<INS>'
                     filtered_vcf.write(
