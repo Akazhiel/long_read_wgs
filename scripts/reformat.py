@@ -77,15 +77,15 @@ def reformat_svim(inp, out, columnid, qual):
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
             if int(columns[headers.index('QUAL')]) >= qual:
-                if 'DUP:TANDEM' in columns[headers.index('ALT')]:
-                    columns[headers.index('ALT')] = '<DUP>'
-                    Format = (
+                Format = (
                         columns[headers.index('FORMAT')].replace('DP', 'DR').replace('AD', 'DV')
                     )
-                    Format = re.split(':', Format)
+                Format_info = re.split(':|,', columns[headers.index(columnid)])
+                del Format_info[1]
+                if 'DUP:TANDEM' in columns[headers.index('ALT')]:
+                    columns[headers.index('ALT')] = '<DUP>'
                     del Format[1]
-                    Format_info = re.split(':|,', columns[headers.index(columnid)])
-                    del Format_info[1:3]
+                    del Format_info[1]
                     filtered_vcf.write(
                         '{}\t{}\t{}\n'.format(
                             '\t'.join(columns[0:8]), ':'.join(Format), ':'.join(Format_info)
@@ -93,29 +93,34 @@ def reformat_svim(inp, out, columnid, qual):
                     )
                 elif 'DUP:INT' in columns[headers.index('ALT')]:
                     columns[headers.index('ALT')] = '<DUP>'
-                    Format = (
-                        columns[headers.index('FORMAT')].replace('DP', 'DR').replace('AD', 'DV')
-                    )
-                    Format_info = re.split(':|,', columns[headers.index(columnid)])
-                    del Format_info[1]
                     filtered_vcf.write(
                         '{}\t{}\t{}\n'.format(
                             '\t'.join(columns[0:8]), Format, ':'.join(Format_info)
                         )
                     )
+                elif 'DEL' in columns[headers.index('ALT')]:
+                    columns[headers.index('ALT')] = '<DEL>'
+                    columns[headers.index('POS')] = str(int(columns[headers.index('POS')]) + 1)
+                    filtered_vcf.write(
+                        '{}\t{}\t{}\n'.format(
+                            '\t'.join(columns[0:8]), Format, ':'.join(Format_info)
+                        )
+                    )
+                elif 'INS' in columns[headers.index('ALT')]:
+                    columns[headers.index('INFO')] += ';SVINSSEQ={}'.format(columns[headers.index('ALT')])
+                    columns[headers.index('ALT')] = '<INS>'
+                    filtered_vcf.write(
+                            '{}\t{}\t{}\n'.format(
+                                '\t'.join(columns[0:8]), Format, ':'.join(Format_info)
+                            )
+                        )
                 else:
-                    if 'DEL' in columns[headers.index('ALT')]:
-                        columns[headers.index('POS')] = str(int(columns[headers.index('POS')]) + 1)
-                    Format = (
-                        columns[headers.index('FORMAT')].replace('DP', 'DR').replace('AD', 'DV')
-                    )
-                    Format_info = re.split(':|,', columns[headers.index(columnid)])
-                    del Format_info[1]
                     filtered_vcf.write(
-                        '{}\t{}\t{}\n'.format(
-                            '\t'.join(columns[0:8]), Format, ':'.join(Format_info)
+                            '{}\t{}\t{}\n'.format(
+                                '\t'.join(columns[0:8]), Format, ':'.join(Format_info)
+                            )
                         )
-                    )
+
         else:
             filtered_vcf.write(line)
     vcf.close()

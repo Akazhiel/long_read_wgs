@@ -34,7 +34,7 @@ def filter_callers(inp, out, num_callers):
     for record in reader:
         called = [x for x in record.calls if x.data['DR'] is not None and 'Normal' not in x.sample]
         if len(called) >= num_callers:
-            writer.write_record(record)
+            writer.write_record(record) 
 
 def prioritize_variants(annot_sv_df):
     variants = pd.read_csv(annot_sv_df, sep = "\t").iloc[:, :35]
