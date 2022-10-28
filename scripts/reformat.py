@@ -84,6 +84,7 @@ def reformat_svim(inp, out, columnid, qual):
                 del Format_info[1]
                 if 'DUP:TANDEM' in columns[headers.index('ALT')]:
                     columns[headers.index('ALT')] = '<DUP>'
+                    Format = Format.split(':')
                     del Format[1]
                     del Format_info[1]
                     filtered_vcf.write(
@@ -102,6 +103,10 @@ def reformat_svim(inp, out, columnid, qual):
                     columns[headers.index('REF')] = 'N'
                     columns[headers.index('ALT')] = '<DEL>'
                     columns[headers.index('POS')] = str(int(columns[headers.index('POS')]) + 1)
+                    INFO = columns[headers.index('INFO')].split(';')
+                    pos_idx = [i for i, x in enumerate(INFO) if x.startswith('END')][0]
+                    INFO[pos_idx] = 'END=' + str(int(INFO[pos_idx].split('=')[1]) + 1)
+                    columns[headers.index('INFO')] = ';'.join(INFO)
                     filtered_vcf.write(
                         '{}\t{}\t{}\n'.format(
                             '\t'.join(columns[0:8]), Format, ':'.join(Format_info)
@@ -177,6 +182,10 @@ def reformat_cutesv(inp, out):
                     columns[headers.index('REF')] = 'N'
                     columns[headers.index('ALT')] = '<DEL>'
                     columns[headers.index('POS')] = str(int(columns[headers.index('POS')]) + 1)
+                    INFO = columns[headers.index('INFO')].split(';')
+                    pos_idx = [i for i, x in enumerate(INFO) if x.startswith('END')][0]
+                    INFO[pos_idx] = 'END=' + str(int(INFO[pos_idx].split('=')[1]) + 1)
+                    columns[headers.index('INFO')] = ';'.join(INFO)
                     filtered_vcf.write('\t'.join(columns) + '\n')
                 elif 'INS' in columns[headers.index('INFO')]:
                     columns[headers.index('POS')] = str(int(columns[headers.index('POS')]) - 1)
