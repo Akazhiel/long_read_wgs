@@ -33,7 +33,7 @@ from scripts.tools import *
 from scripts.vcfmerge import merge_variants
 
 
-def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NUM_CALLERS, WINDOW, ENSEMBL_VERSION):
+def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, NUM_CALLERS, WINDOW, ENSEMBL_VERSION):
 
     logging.basicConfig(
         format   = '[%(asctime)s] - [%(levelname)s] - %(message)s',
@@ -455,7 +455,6 @@ if __name__ == '__main__':
     GENOME_REF      = os.path.abspath(args.genome)
     THREADS         = int(args.threads)
     STEPS           = args.steps
-    SNPEFFDB        = args.snpeff_db
     NUM_CALLERS     = args.num_callers
     WINDOW          = args.window
     ENSEMBL_VERSION = args.ensembl_version
@@ -464,4 +463,4 @@ if __name__ == '__main__':
     os.makedirs(os.path.abspath(DIR), exist_ok=True)
     os.chdir(os.path.abspath(DIR))
 
-    main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NUM_CALLERS, WINDOW, ENSEMBL_VERSION)
+    main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, NUM_CALLERS, WINDOW, ENSEMBL_VERSION)
