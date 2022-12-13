@@ -59,7 +59,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, NUM_CALLERS,
     logger.info('Pipeline version: {}'.format(version))
     logger.info(
         'Processing Normal FASTQ {}; and Tumor FASTQ {} with Sample ID {} '
-        'using reference genome {}.'.format(FQ_NORMAL, FQ_TUMOR, SAMPLEID, SNPEFFDB)
+        'using reference genome GRCh38.'.format(FQ_NORMAL, FQ_TUMOR, SAMPLEID)
     )
 
     sample_normal = SAMPLEID + '_Normal'
