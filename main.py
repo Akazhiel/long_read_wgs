@@ -25,7 +25,7 @@ from pyensembl import EnsemblRelease
 
 from scripts.__version__ import version
 from scripts.common import exec_command
-from scripts.epitope import create_epitope
+# from scripts.epitope import create_epitope
 from scripts.filters import filter_callers, filter_somatic, prioritize_variants
 from scripts.hgvs_notations import add_variant_hgvs
 from scripts.reformat import *
