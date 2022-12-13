@@ -19,28 +19,27 @@ import datetime
 import logging
 import multiprocessing as mp
 import os
-import shutil
-import sys
-import time
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
+
+from pyensembl import EnsemblRelease
 
 from scripts.__version__ import version
 from scripts.common import exec_command
-from scripts.filters import filter_somatic, filter_callers, prioritize_variants
+from scripts.epitope import create_epitope
+from scripts.filters import filter_callers, filter_somatic, prioritize_variants
+from scripts.hgvs_notations import add_variant_hgvs
 from scripts.reformat import *
-from scripts.vcfmerge import merge_variants
-# from scripts.hgvs_notations import add_variant_hgvs
 from scripts.tools import *
-# from scripts.epitope import create_epitope
+from scripts.vcfmerge import merge_variants
 
 
-def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NUM_CALLERS, WINDOW):
+def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NUM_CALLERS, WINDOW, ENSEMBL_VERSION):
 
     logging.basicConfig(
-        format='[%(asctime)s] - [%(levelname)s] - %(message)s',
-        datefmt='%d-%b-%y %H:%M:%S',
-        level=logging.DEBUG,
-        filename=SAMPLEID + '.log',
+        format   = '[%(asctime)s] - [%(levelname)s] - %(message)s',
+        datefmt  = '%d-%b-%y %H:%M:%S',
+        level    = logging.DEBUG,
+        filename = SAMPLEID + '.log',
     )
     logger = logging.getLogger(SAMPLEID)
 
@@ -136,14 +135,14 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         # Call variants with SVIM for Tumor sample
 
-        cmd = '{} --sample SVIM_Tumor --min_sv_size 30 --max_consensus_length 10000000 svim_tumor/ {}.bam {}'.format(
+        cmd = '{} --sample SVIM_Tumor --min_sv_size 10 --max_consensus_length 10000000 svim_tumor/ {}.bam {}'.format(
             SVIM, sample_tumor, GENOME_REF
         )
         p4 = exec_command(cmd, detach=True)
 
         # Call variants with SVIM for Normal sample
 
-        cmd = '{} --sample SVIM_Normal --min_sv_size 30 --max_consensus_length 10000000 svim_normal/ {}.bam {}'.format(
+        cmd = '{} --sample SVIM_Normal --min_sv_size 10 --max_consensus_length 10000000 svim_normal/ {}.bam {}'.format(
             SVIM, sample_normal, GENOME_REF
         )
         p5 = exec_command(cmd, detach=True)
@@ -155,8 +154,8 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         os.makedirs('cutesv_tumor')
 
         cmd = (
-            '{} -t {} -S CUTESV_Tumor -s 2 -L -1 -md 5 --genotype --max_cluster_bias_INS 300 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 300 '
-            '--diff_ratio_merging_DEL 0.5 --remain_reads_ratio 0.8 {}.bam {} CUTESV_Tumor.vcf cutesv_tumor/'.format(
+            '{} -t {} -S CUTESV_Tumor -l 10 -s 2 -L -1 -md 5 --retain_work_dir --genotype --max_cluster_bias_INS 300 --diff_ratio_merging_INS 0.3 --max_cluster_bias_DEL 100 '
+            '--diff_ratio_merging_DEL 0.3 --remain_reads_ratio 0.8 {}.bam {} CUTESV_Tumor.vcf cutesv_tumor/'.format(
                 CUTESV, THREADS, sample_tumor, GENOME_REF
             )
         )
@@ -167,8 +166,8 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         os.makedirs('cutesv_normal')
 
         cmd = (
-            '{} -t {} -S CUTESV_Normal -s 2 -L -1 -md 5 --genotype --max_cluster_bias_INS 300 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 300 '
-            '--diff_ratio_merging_DEL 0.5 --remain_reads_ratio 0.8 {}.bam {} CUTESV_Normal.vcf cutesv_normal/'.format(
+            '{} -t {} -S CUTESV_Normal -l 10 -s 2 -L -1 -md 5 --retain_work_dir --genotype --max_cluster_bias_INS 100 --diff_ratio_merging_INS 0.3 --max_cluster_bias_DEL 100 '
+            '--diff_ratio_merging_DEL 0.3 --remain_reads_ratio 0.8 {}.bam {} CUTESV_Normal.vcf cutesv_normal/'.format(
                 CUTESV, THREADS, sample_normal, GENOME_REF
             )
         )
@@ -184,13 +183,13 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
 
         logger.info('Variant calling with Sniffles')
 
-        cmd = '{} --sample-id SNIFFLES_Tumor --minsupport 2 --allow-overwrite --qc-stdev-abs-max 5 --quiet --reference {} -t {} --minsvlen 30 --mapq 20 --input {}.bam --vcf {}_sniffles.vcf'.format(
+        cmd = '{} --sample-id SNIFFLES_Tumor --minsupport 2 --allow-overwrite -- --quiet --reference {} -t {} --minsvlen 10 --mapq 20 --input {}.bam --vcf {}_sniffles.vcf'.format(
             SNIFFLES, GENOME_REF, THREADS, sample_tumor, sample_tumor
         )
         p8 = exec_command(cmd, detach=True)
         p8.wait()
 
-        cmd = '{} --sample-id SNIFFLES_Normal --minsupport 2 --allow-overwrite --qc-stdev-abs-max 5 --quiet --reference {} -t {} --minsvlen 30 --mapq 20 --input {}.bam --vcf {}_sniffles.vcf'.format(
+        cmd = '{} --sample-id SNIFFLES_Normal --minsupport 2 --allow-overwrite -- --quiet --reference {} -t {} --minsvlen 10 --mapq 20 --input {}.bam --vcf {}_sniffles.vcf'.format(
             SNIFFLES, GENOME_REF, THREADS, sample_normal, sample_normal
         )
         p9 = exec_command(cmd, detach=True)
@@ -357,14 +356,16 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NU
         logger.info('Total annotation time: {}'.format(total_annotation_time))
 
         # Prirotize variants according to breakpoints.
-    # if 'epitope' in STEPS:
+    if 'epitope' in STEPS:
+        
+        ensembl_data = EnsemblRelease(ENSEMBL_VERSION)
 
-    #     annotsv_prio = prioritize_variants('annotsv_ensembl.tsv')
+        annotsv_prio = prioritize_variants('annotsv_ensembl.tsv')
 
-    #     variants = add_variant_hgvs(annotsv_prio)
+        variants = add_variant_hgvs(annotsv_prio)
 
-    #     for variant in variants:
-    #         create_epitope(variant)
+        for variant in variants:
+            create_epitope(variant)
 
     end_pipeline_time = datetime.datetime.now()
     total_pipeline_time = end_pipeline_time - start_pipeline_time
@@ -400,15 +401,6 @@ if __name__ == '__main__':
         help='Path to the output folder where output files will be placed',
     )
     parser.add_argument(
-        '-db',
-        '--snpeff-db',
-        metavar='\b',
-        type=str,
-        default='hg38',
-        required=False,
-        help='Genome assembly version to be used in snpEff. (Default: %(default)s)',
-    )
-    parser.add_argument(
         '-t',
         '--threads',
         metavar='\b',
@@ -420,9 +412,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '--steps',
         nargs='+',
-        default=['mapping', 'variant', 'filter', 'annotation'],
+        default=['mapping', 'variant', 'filter', 'annotation', 'epitope'],
         help='Steps to perform in the pipeline. List of choices: {%(choices)s}',
-        choices=['mapping', 'variant', 'filter', 'annotation'],
+        choices=['mapping', 'variant', 'filter', 'annotation', 'epitope'],
     )
     parser.add_argument(
         '-n',
@@ -442,25 +434,34 @@ if __name__ == '__main__':
         default=50,
         required=False,
     )
+    parser.add_argument(
+        '--ensembl-version',
+        metavar='\b',
+        help='Ensembl version number that was used to annotate the variants with AnnotSV. (Default: %{default}'
+        type=int,
+        default=107,
+        required=False,
+    )
     
     # parser.add_argument('--keep-intermediate', default=False, action='store_true', required=False,
     #                     help='Do not remove temporary files')
 
     # Parse arguments
-    args = parser.parse_args()
-    DIR = args.outdir
-    FQ_NORMAL = os.path.abspath(args.FASTQ_NORMAL)
-    FQ_TUMOR = os.path.abspath(args.FASTQ_TUMOR)
-    SAMPLEID = args.sample
-    GENOME_REF = os.path.abspath(args.genome)
-    THREADS = int(args.threads)
-    STEPS = args.steps
-    SNPEFFDB = args.snpeff_db
-    NUM_CALLERS = args.num_callers
-    WINDOW = args.window
+    args            = parser.parse_args()
+    DIR             = args.outdir
+    FQ_NORMAL       = os.path.abspath(args.FASTQ_NORMAL)
+    FQ_TUMOR        = os.path.abspath(args.FASTQ_TUMOR)
+    SAMPLEID        = args.sample
+    GENOME_REF      = os.path.abspath(args.genome)
+    THREADS         = int(args.threads)
+    STEPS           = args.steps
+    SNPEFFDB        = args.snpeff_db
+    NUM_CALLERS     = args.num_callers
+    WINDOW          = args.window
+    ENSEMBL_VERSION = args.ensembl_version
 
     # Move to output dir
     os.makedirs(os.path.abspath(DIR), exist_ok=True)
     os.chdir(os.path.abspath(DIR))
 
-    main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NUM_CALLERS, WINDOW)
+    main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, SNPEFFDB, NUM_CALLERS, WINDOW, ENSEMBL_VERSION)

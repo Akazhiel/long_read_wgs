@@ -2,9 +2,9 @@
 @author: Jonatan González Rodríguez <jonatan.gonzalez.r@outlook.com>
 """
 
-import vcfpy
-import numpy as np
 import pandas as pd
+import vcfpy
+
 
 def filter_somatic(inp, out, caller):
     reader = vcfpy.Reader.from_path(inp)
@@ -21,10 +21,10 @@ def filter_somatic(inp, out, caller):
         tumor_DV = token if type(token) is int else 0
         tumor_DP = tumor_DR + tumor_DV
         normal_DP = normal_DR + normal_DV
-        tumor_VAF = np.around(tumor_DV/tumor_DP, 3) if tumor_DP != 0 else 0
-        normal_VAF = np.around(normal_DV/normal_DP, 3) if normal_DP != 0 else 0
+        tumor_VAF = round(tumor_DV/tumor_DP, 3) if tumor_DP != 0 else 0
+        normal_VAF = round(normal_DV/normal_DP, 3) if normal_DP != 0 else 0
         t2n_ratio = tumor_VAF/normal_VAF if normal_VAF != 0 else 5
-        if tumor_DP >= 10 and tumor_DV >= 7 and t2n_ratio >= 5:
+        if tumor_DP >= 10 and tumor_DV >= 7 and tumor_VAF >= 7 and normal_VAF <= 1.4:
             writer.write_record(record)
 
 
@@ -46,5 +46,4 @@ def prioritize_variants(annot_sv_df):
     variants['SV_chrom'] = 'chr' + variants['SV_chrom'].astype(str)
     variants['Frameshift'] = variants['Frameshift'].map({"yes":True,"no":False})
     variants.to_csv('annotsv_prioritized.tsv', sep="\t", index=False)
-    variants = variants[variants.Priority == 1]
     return variants

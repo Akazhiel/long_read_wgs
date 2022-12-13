@@ -15,16 +15,26 @@ class Variant:
         self.epitope    = None
         self.gene       = None
         self.transcript = None
+        self.strand     = None
         self.hgvsg      = None
         self.hgvsc      = None
         self.priority   = None
         self.wt         = None
         self.mut        = None
         self.frameshift = None
+        self.contained  = None
+        self.length     = None
+        self.location   = None
     
     @property
     def key(self):
         return f'{self.chrom}:{self.start}_{self.end}_{self.alt}'
+    
+    def ensembl_transcript(self):
+        transcript_id = self.transcript.split('.')[0]
+        transcript_ensembl = ens.transcript_by_id(transcript_id)
+        self.strand = transcript_ensembl.strand
+        return transcript_ensembl
 
 def exec_command(cmd, detach=False):
     logger = logging.getLogger()
