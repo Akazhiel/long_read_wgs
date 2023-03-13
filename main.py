@@ -135,14 +135,14 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, NUM_CALLERS,
 
         # Call variants with SVIM for Tumor sample
 
-        cmd = '{} --sample SVIM_Tumor --min_sv_size 10 --max_consensus_length 10000000 svim_tumor/ {}.bam {}'.format(
+        cmd = '{} --sample SVIM_Tumor --all_bnds --min_sv_size 10 --max_consensus_length 10000000 svim_tumor/ {}.bam {}'.format(
             SVIM, sample_tumor, GENOME_REF
         )
         p4 = exec_command(cmd, detach=True)
 
         # Call variants with SVIM for Normal sample
 
-        cmd = '{} --sample SVIM_Normal --min_sv_size 10 --max_consensus_length 10000000 svim_normal/ {}.bam {}'.format(
+        cmd = '{} --sample SVIM_Normal --all_bnds --min_sv_size 10 --max_consensus_length 10000000 svim_normal/ {}.bam {}'.format(
             SVIM, sample_normal, GENOME_REF
         )
         p5 = exec_command(cmd, detach=True)
@@ -240,6 +240,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, NUM_CALLERS,
         p1 = exec_command(cmd, detach = True)
 
         p1.wait()
+
 
         # Merge individual SVIM calls and filter for somatic variants
 
