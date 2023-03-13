@@ -6,6 +6,7 @@ import re
 import csv, datetime
 import pysam
 
+chrID = [ 'chr{}'.format(x) for x in list(range(1,23)) + ['X', 'Y', 'M'] ]
 
 def reformat_nanomonsv(inp, out):
     vcf = open(inp, 'r')
@@ -76,6 +77,8 @@ def reformat_svim(inp, out, columnid, qual):
             filtered_vcf.write(line)
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
+            if columns['CHROM'] not in chrID:
+                continue
             if int(columns[headers.index('QUAL')]) >= qual:
                 Format = (
                         columns[headers.index('FORMAT')].replace('DP', 'DR').replace('AD', 'DV')
@@ -144,6 +147,8 @@ def reformat_sniffles(inp, out):
             filtered_vcf.write(line)
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
+            if columns['CHROM'] not in chrID:
+                continue
             if 'DEL' in columns[headers.index('INFO')]:
                 columns[headers.index('REF')] = 'N'
                 columns[headers.index('ALT')] = '<DEL>'
@@ -177,6 +182,8 @@ def reformat_cutesv(inp, out):
             filtered_vcf.write(line)
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
+            if columns['CHROM'] not in chrID:
+                continue
             if columns[headers.index('QUAL')] != '.':
                 if 'DEL' in columns[headers.index('INFO')]:
                     columns[headers.index('REF')] = 'N'
