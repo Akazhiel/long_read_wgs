@@ -77,7 +77,7 @@ def reformat_svim(inp, out, columnid, qual):
             filtered_vcf.write(line)
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
-            if columns['CHROM'] not in chrID:
+            if columns[headers.index('#CHROM')] not in chrID:
                 continue
             if int(columns[headers.index('QUAL')]) >= qual:
                 Format = (
@@ -147,7 +147,7 @@ def reformat_sniffles(inp, out):
             filtered_vcf.write(line)
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
-            if columns['CHROM'] not in chrID:
+            if columns[headers.index('#CHROM')] not in chrID:
                 continue
             if 'DEL' in columns[headers.index('INFO')]:
                 columns[headers.index('REF')] = 'N'
@@ -182,7 +182,7 @@ def reformat_cutesv(inp, out):
             filtered_vcf.write(line)
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
-            if columns['CHROM'] not in chrID:
+            if columns[headers.index('#CHROM')] not in chrID:
                 continue
             if columns[headers.index('QUAL')] != '.':
                 if 'DEL' in columns[headers.index('INFO')]:
