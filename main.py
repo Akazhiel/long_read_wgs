@@ -135,14 +135,14 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, NUM_CALLERS,
 
         # Call variants with SVIM for Tumor sample
 
-        cmd = '{} --sample SVIM_Tumor --min_sv_size 30 --partition_max_distance 5 --cluster_max_distance 0.8 --max_consensus_length 10000000 svim_tumor/ {}.bam {}'.format(
+        cmd = '{} --sample SVIM_Tumor --min_sv_size 30 --tandem_duplications_as_insertions --interspersed_duplications_as_insertions --partition_max_distance 5 --cluster_max_distance 0.8 --max_consensus_length 10000000 svim_tumor/ {}.bam {}'.format(
             SVIM, sample_tumor, GENOME_REF
         )
         p4 = exec_command(cmd, detach=True)
 
         # Call variants with SVIM for Normal sample
 
-        cmd = '{} --sample SVIM_Normal --min_sv_size 10 --partition_max_distance 5 --cluster_max_distance 0.8 --max_consensus_length 10000000 svim_normal/ {}.bam {}'.format(
+        cmd = '{} --sample SVIM_Normal --min_sv_size 10 --tandem_duplications_as_insertions --interspersed_duplications_as_insertions --partition_max_distance 5 --cluster_max_distance 0.8 --max_consensus_length 10000000 svim_normal/ {}.bam {}'.format(
             SVIM, sample_normal, GENOME_REF
         )
         p5 = exec_command(cmd, detach=True)
@@ -223,20 +223,20 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, NUM_CALLERS,
 
         # Re-genotype SVIM using Sniffles
 
-        cmd = f'{SNIFFLES} --input {sample_tumor}.bam --allow-overwrite --genotype-vcf tmp_svim_tumor.vcf --quiet --vcf svim_tumor_regenotype.vcf -t {THREADS}'
+        # cmd = f'{SNIFFLES} --input {sample_tumor}.bam --allow-overwrite --genotype-vcf tmp_svim_tumor.vcf --quiet --vcf svim_tumor_regenotype.vcf -t {THREADS}'
 
-        reg1 = exec_command(cmd, detach=True)
+        # reg1 = exec_command(cmd, detach=True)
 
-        cmd = f'{SNIFFLES} --input {sample_normal}.bam --allow-overwrite --genotype-vcf tmp_svim_normal.vcf --quiet --vcf svim_normal_regenotype.vcf -t {THREADS}'
+        # cmd = f'{SNIFFLES} --input {sample_normal}.bam --allow-overwrite --genotype-vcf tmp_svim_normal.vcf --quiet --vcf svim_normal_regenotype.vcf -t {THREADS}'
 
-        reg2 = exec_command(cmd, detach=True)
+        # reg2 = exec_command(cmd, detach=True)
 
-        reg1.wait()
-        reg2.wait()
+        # reg1.wait()
+        # reg2.wait()
 
         # Filter variants in tumor vcf to keep only precise variants.
 
-        cmd = f'{BCFTOOLS} view -i "INFO/STD_POS=\'.\'" svim_tumor_regenotype.vcf > precise_svim_tumor.vcf'
+        cmd = f'{BCFTOOLS} view -i "INFO/STD_POS=\'.\'" tmp_svim_tumor.vcf > precise_svim_tumor.vcf'
         p1 = exec_command(cmd, detach = True)
 
         p1.wait()
@@ -245,7 +245,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, NUM_CALLERS,
         # Merge individual SVIM calls and filter for somatic variants
 
         merge_variants(
-            ['precise_svim_tumor.vcf', 'svim_normal_regenotype.vcf'], 'svim_combined_calls.vcf', 50
+            ['precise_svim_tumor.vcf', 'tmp_svim_normal.vcf'], 'svim_combined_calls.vcf', 50
         )
         filter_somatic('svim_combined_calls.vcf', 'svim_combined_calls_filtered.vcf', 'SVIM')
 
