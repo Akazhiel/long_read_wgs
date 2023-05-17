@@ -63,15 +63,16 @@ def reformat_svim(inp, out, columnid, qual):
         if line.startswith('##') and 'ID=DP' in line:
             new_DR = line.replace(
                 'ID=DP,Number=1,Type=Integer,Description="Read depth"',
-                'ID=DR,Number=1,Type=Integer,Description="# reads supporting the reference allele."',
+                'ID=DR,Number=1,Type=Integer,Description="# reads supporting the reference and alternate alleles."',
             )
             filtered_vcf.write(new_DR)
         elif line.startswith('##') and 'ID=AD' in line:
-            new_DV = line.replace(
-                'ID=AD,Number=R,Type=Integer,Description="Read depth for each allele"',
-                'ID=DV,Number=1,Type=Integer,Description="# of reads supporting the variant allele."',
-            )
-            filtered_vcf.write(new_DV)
+            continue
+            # new_DV = line.replace(
+            #     'ID=AD,Number=R,Type=Integer,Description="Read depth for each allele"',
+            #     'ID=DV,Number=1,Type=Integer,Description="# of reads supporting the variant allele."',
+            # )
+            # filtered_vcf.write(new_DV)
         elif line.startswith('#CHROM'):
             headers = line.strip().split('\t')
             filtered_vcf.write(line)
@@ -81,7 +82,7 @@ def reformat_svim(inp, out, columnid, qual):
                 continue
             if int(columns[headers.index('QUAL')]) >= qual:
                 Format = (
-                        columns[headers.index('FORMAT')].replace('DP', 'DR').replace('AD', 'DV')
+                        columns[headers.index('FORMAT')].replace('DP', 'DR') # .replace('AD', 'DV')
                     )
                 Format_info = re.split(':|,', columns[headers.index(columnid)])
                 del Format_info[1]
@@ -92,14 +93,14 @@ def reformat_svim(inp, out, columnid, qual):
                     del Format_info[1]
                     filtered_vcf.write(
                         '{}\t{}\t{}\n'.format(
-                            '\t'.join(columns[0:8]), ':'.join(Format), ':'.join(Format_info)
+                            '\t'.join(columns[0:8]), ':'.join(Format), ':'.join([Format_info[0], ','.join(Format_info[1:])])
                         )
                     )
                 elif 'DUP:INT' in columns[headers.index('ALT')]:
                     columns[headers.index('ALT')] = '<DUP>'
                     filtered_vcf.write(
                         '{}\t{}\t{}\n'.format(
-                            '\t'.join(columns[0:8]), Format, ':'.join(Format_info)
+                            '\t'.join(columns[0:8]), Format, ':'.join([Format_info[0], ','.join(Format_info[1:])])
                         )
                     )
                 elif 'DEL' in columns[headers.index('INFO')]:
@@ -112,7 +113,7 @@ def reformat_svim(inp, out, columnid, qual):
                     columns[headers.index('INFO')] = ';'.join(INFO)
                     filtered_vcf.write(
                         '{}\t{}\t{}\n'.format(
-                            '\t'.join(columns[0:8]), Format, ':'.join(Format_info)
+                            '\t'.join(columns[0:8]), Format, ':'.join([Format_info[0], ','.join(Format_info[1:])])
                         )
                     )
                 elif 'INS' in columns[headers.index('INFO')]:
@@ -120,13 +121,13 @@ def reformat_svim(inp, out, columnid, qual):
                     columns[headers.index('ALT')] = '<INS>'
                     filtered_vcf.write(
                             '{}\t{}\t{}\n'.format(
-                                '\t'.join(columns[0:8]), Format, ':'.join(Format_info)
+                                '\t'.join(columns[0:8]), Format, ':'.join([Format_info[0], ','.join(Format_info[1:])])
                             )
                         )
                 else:
                     filtered_vcf.write(
                             '{}\t{}\t{}\n'.format(
-                                '\t'.join(columns[0:8]), Format, ':'.join(Format_info)
+                                '\t'.join(columns[0:8]), Format, ':'.join([Format_info[0], ','.join(Format_info[1:])])
                             )
                         )
 
@@ -136,23 +137,31 @@ def reformat_svim(inp, out, columnid, qual):
     filtered_vcf.close()
 
 
-def reformat_sniffles(inp, out):
+def reformat_sniffles(inp, out, columnid):
     vcf = open(inp, 'r')
     filtered_vcf = open(out, 'w')
     for line in vcf:
-        if line.startswith('#CHROM'):
+        if line.startswith('##') and 'ID=DR' in line:
+            new_DR = line.replace(
+                'ID=DR,Number=1,Type=Integer,Description="Number of reference reads"',
+                'ID=DR,Number=1,Type=Integer,Description="# reads supporting the reference and alternate alleles."',
+            )
+            filtered_vcf.write(new_DR)
+        elif line.startswith('#CHROM'):
             headers = line.strip().split('\t')
             new_SEQ = '##INFO=<ID=SVINSSEQ,Number=1,Type=String,Description="Sequence of insertion">\n'
             filtered_vcf.write(new_SEQ)
             filtered_vcf.write(line)
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
+            Format_info = re.split(':|,', columns[headers.index(columnid)])
+            del Format_info[1]
             if columns[headers.index('#CHROM')] not in chrID:
                 continue
             if 'DEL' in columns[headers.index('INFO')]:
                 columns[headers.index('REF')] = 'N'
                 columns[headers.index('ALT')] = '<DEL>'
-                filtered_vcf.write('\t'.join(columns) + '\n')
+                filtered_vcf.write('{}\t{}\n'.format('\t'.join(columns[0:9], ':'.join([Format_info[0], ','.join(Format_info[1:])]))))
             elif 'INS' in columns[headers.index('INFO')]:
                 columns[headers.index('POS')] = str(int(columns[headers.index('POS')]) - 1)
                 INFO = columns[headers.index('INFO')].split(';')
@@ -163,18 +172,24 @@ def reformat_sniffles(inp, out):
                     columns[headers.index('ALT')]
                 )
                 columns[headers.index('ALT')] = '<INS>'
-                filtered_vcf.write('\t'.join(columns) + '\n')
+                filtered_vcf.write('{}\t{}\n'.format('\t'.join(columns[0:9], ':'.join([Format_info[0], ','.join(Format_info[1:])]))))
             else:
-                filtered_vcf.write(line)
+                filtered_vcf.write('{}\t{}\n'.format('\t'.join(columns[0:9], ':'.join([Format_info[0], ','.join(Format_info[1:])]))))
         else:
             filtered_vcf.write(line)
 
 
-def reformat_cutesv(inp, out):
+def reformat_cutesv(inp, out, columnid):
     vcf = open(inp, 'r')
     filtered_vcf = open(out, 'w')
     for line in vcf:
-        if line.startswith('#CHROM'):
+        if line.startswith('##') and 'ID=DR' in line:
+            new_DR = line.replace(
+                'ID=DR,Number=1,Type=Integer,Description="Number of reference reads"',
+                'ID=DR,Number=1,Type=Integer,Description="# reads supporting the reference and alternate alleles."',
+            )
+            filtered_vcf.write(new_DR)
+        elif line.startswith('#CHROM'):
             headers = line.strip().split('\t')
             filtered_vcf.write(
                 '##INFO=<ID=SVINSSEQ,Number=1,Type=String,Description="Sequence of insertion">\n'
@@ -185,6 +200,7 @@ def reformat_cutesv(inp, out):
             if columns[headers.index('#CHROM')] not in chrID:
                 continue
             if columns[headers.index('QUAL')] != '.':
+                Format_info = re.split(':|,', columns[headers.index(columnid)])
                 if 'DEL' in columns[headers.index('INFO')]:
                     columns[headers.index('REF')] = 'N'
                     columns[headers.index('ALT')] = '<DEL>'
@@ -193,7 +209,7 @@ def reformat_cutesv(inp, out):
                     pos_idx = [i for i, x in enumerate(INFO) if x.startswith('END')][0]
                     INFO[pos_idx] = 'END=' + str(int(INFO[pos_idx].split('=')[1]) + 1)
                     columns[headers.index('INFO')] = ';'.join(INFO)
-                    filtered_vcf.write('\t'.join(columns) + '\n')
+                    filtered_vcf.write('{}\t{}\n'.format('\t'.join(columns[0:9], ':'.join([Format_info[0], ','.join(Format_info[1:3])]))))
                 elif 'INS' in columns[headers.index('INFO')]:
                     columns[headers.index('POS')] = str(int(columns[headers.index('POS')]) - 1)
                     columns[headers.index('REF')] = 'N'
@@ -201,10 +217,10 @@ def reformat_cutesv(inp, out):
                         columns[headers.index('ALT')]
                     )
                     columns[headers.index('ALT')] = '<INS>'
-                    filtered_vcf.write('\t'.join(columns) + '\n')
+                    filtered_vcf.write('{}\t{}\n'.format('\t'.join(columns[0:9], ':'.join([Format_info[0], ','.join(Format_info[1:3])]))))
                 else:
                     columns[headers.index('REF')] = 'N'
-                    filtered_vcf.write('\t'.join(columns) + '\n')
+                    filtered_vcf.write('{}\t{}\n'.format('\t'.join(columns[0:9], ':'.join([Format_info[0], ','.join(Format_info[1:3])]))))
         else:
             filtered_vcf.write(line)
 

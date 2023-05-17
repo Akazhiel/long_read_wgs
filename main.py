@@ -30,7 +30,7 @@ from scripts.filters import filter_callers, filter_somatic, prioritize_variants
 # from scripts.hgvs_notations import add_variant_hgvs
 from scripts.reformat import *
 from scripts.tools import *
-from scripts.vcfmerge import merge_variants
+from scripts.vcfmerge import add_ins_sequence, merge_variants
 
 
 def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, NUM_CALLERS, WINDOW, ENSEMBL_VERSION):
@@ -115,23 +115,6 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, NUM_CALLERS,
 
         start_variant_time = datetime.datetime.now()
         logger.info('Starting variant calling: {}'.format(start_variant_time))
-        # logger.info('Variant calling with nanomonSV')
-
-        # cmd = '{} parse {}.bam nanomon_vc/Tumor'.format(NANOMON, sample_tumor)
-        # p1 = exec_command(cmd, detach=True)
-
-        # time.sleep(1)  # Required so the parse step by nanomon is executed in parallel but doesn't break due to the same folder name
-
-        # cmd = '{} parse {}.bam nanomon_vc/Normal'.format(NANOMON, sample_normal)
-        # p2 = exec_command(cmd, detach=True)
-
-        # p1.wait()
-        # p2.wait()
-
-        # cmd = '{} get nanomon_vc/Tumor {}.bam {} --var_read_min_mapq 20 --min_tumor_variant_read_num 2 --use_racon --control_prefix nanomon_vc/Normal --control_bam {}.bam'.format(
-        #     NANOMON, sample_tumor, GENOME_REF, sample_normal
-        # )
-        # p3 = exec_command(cmd, detach=True)
 
         logger.info('Variant calling with SVIM')
 
@@ -175,12 +158,6 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, NUM_CALLERS,
         )
         p7 = exec_command(cmd, detach=True)
 
-        # p3.wait()
-        p4.wait()
-        p5.wait()
-        p6.wait()
-        p7.wait()
-
         # Call variants with SNIFFLES
 
         logger.info('Variant calling with Sniffles')
@@ -189,12 +166,19 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, NUM_CALLERS,
             SNIFFLES, GENOME_REF, THREADS, sample_tumor, sample_tumor
         )
         p8 = exec_command(cmd, detach=True)
-        p8.wait()
 
         cmd = '{} --sample-id SNIFFLES_Normal --minsupport 2 --allow-overwrite --cluster-binsize 5 --cluster-merge-len 0 --no-consensus --no-qc --quiet --reference {} -t {} --minsvlen 10 --mapq 20 --input {}.bam --vcf {}_sniffles.vcf'.format(
             SNIFFLES, GENOME_REF, THREADS, sample_normal, sample_normal
         )
         p9 = exec_command(cmd, detach=True)
+        
+        # Wait for all variant calling processes to finish
+        
+        p4.wait()
+        p5.wait()
+        p6.wait()
+        p7.wait()
+        p8.wait()
         p9.wait()
 
         end_variant_time = datetime.datetime.now()
@@ -257,6 +241,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, NUM_CALLERS,
             args=(
                 '{}_sniffles.vcf'.format(sample_normal),
                 'tmp_sniffles_normal.vcf',
+                'SNIFFLES_Normal'
             ),
         )
         re_snifflesN = mp.Process(
@@ -264,6 +249,7 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, NUM_CALLERS,
             args=(
                 'precise_sniffles_tumor.vcf',
                 'tmp_sniffles_tumor.vcf',
+                'SNIFFLES_Tumor'
             ),
         )
 
@@ -293,12 +279,18 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, NUM_CALLERS,
 
         re_cutesvT = mp.Process(
             target=reformat_cutesv,
-            args=('CUTESV_Normal.vcf', 'tmp_cutesv_normal.vcf')
+            args=('CUTESV_Normal.vcf', 
+                  'tmp_cutesv_normal.vcf',
+                  'CUTESV_Normal'
+                  )
         )
 
         re_cutesvN = mp.Process(
             target=reformat_cutesv,
-            args=('precise_cutesv_tumor.vcf', 'tmp_cutesv_tumor.vcf')
+            args=('precise_cutesv_tumor.vcf', 
+                  'tmp_cutesv_tumor.vcf',
+                  'CUTESV_Tumor'
+                  )
         )
 
         re_cutesvT.start()
@@ -315,29 +307,32 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, NUM_CALLERS,
                   'cutesv_combined_calls.vcf', 50)
         )
 
-        filter_somatic('cutesv_combined_calls.vcf',
-                       'cutesv_combined_calls_filtered.vcf', 'CUTESV')
-
         # Wait for merges to finish
 
         merge_svim.join()
         merge_sniffles.join()
         merge_cutesv.join()
 
+        # Add insertion sequences to merged VCFs
+
+        add_ins_sequence('svim_combined_calls.vcf', 'precise_svim_tumor.vcf', 'svim_combined.vcf')
+        add_ins_sequence('sniffles_combined_calls.vcf', 'tmp_sniffles_tumor.vcf', 'sniffles_combined.vcf')
+        add_ins_sequence('cutesv_combined_calls.vcf', 'tmp_cutesv_tumor.vcf', 'cutesv_combined.vcf')
+
         # Filter somatic calls for each caller
 
-        filter_somatic('svim_combined_calls.vcf',
-                       'svim_combined_calls_filtered.vcf',
+        filter_somatic('svim_combined.vcf',
+                       'svim_combined_filtered.vcf',
                        'SVIM'
                        )
 
-        filter_somatic('sniffles_combined_calls.vcf',
-                       'sniffles_combined_calls_filtered.vcf',
+        filter_somatic('sniffles_combined.vcf',
+                       'sniffles_combined_filtered.vcf',
                        'SNIFFLES'
                        )
 
-        filter_somatic('cutesv_combined_calls.vcf',
-                       'cutesv_combined_calls_filtered.vcf',
+        filter_somatic('cutesv_combined.vcf',
+                       'cutesv_combined_filtered.vcf',
                        'CUTESV'
                        )
 
@@ -345,9 +340,9 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, NUM_CALLERS,
 
         merge_variants(
             [
-                'sniffles_combined_calls_filtered.vcf',
-                'svim_combined_calls_filtered.vcf',
-                'cutesv_combined_calls_filtered.vcf',
+                'sniffles_combined_filtered.vcf',
+                'svim_combined_filtered.vcf',
+                'cutesv_combined_filtered.vcf',
             ],
             'combined_calls.vcf',
             WINDOW,
