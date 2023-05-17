@@ -162,7 +162,9 @@ def reformat_sniffles(inp, out, columnid):
             if 'DEL' in columns[headers.index('INFO')]:
                 columns[headers.index('REF')] = 'N'
                 columns[headers.index('ALT')] = '<DEL>'
-                filtered_vcf.write('{}\t{}\n'.format('\t'.join([columns[0:9], ':'.join([Format_info[0], ','.join(Format_info[1:])])])))
+                filtered_vcf.write('{}\t{}\n'.format(
+                    '\t'.join(columns[0:9]), ':'.join([Format_info[0], ','.join(Format_info[1:])])
+                    ))
             elif 'INS' in columns[headers.index('INFO')]:
                 columns[headers.index('POS')] = str(int(columns[headers.index('POS')]) - 1)
                 INFO = columns[headers.index('INFO')].split(';')
@@ -173,9 +175,9 @@ def reformat_sniffles(inp, out, columnid):
                     columns[headers.index('ALT')]
                 )
                 columns[headers.index('ALT')] = '<INS>'
-                filtered_vcf.write('{}\t{}\n'.format('\t'.join([columns[0:9], ':'.join([Format_info[0], ','.join(Format_info[1:])])])))
+                filtered_vcf.write('{}\t{}\n'.format('\t'.join(columns[0:9]), ':'.join([Format_info[0], ','.join(Format_info[1:])])))
             else:
-                filtered_vcf.write('{}\t{}\n'.format('\t'.join([columns[0:9], ':'.join([Format_info[0], ','.join(Format_info[1:])])])))
+                filtered_vcf.write('{}\t{}\n'.format('\t'.join(columns[0:9]), ':'.join([Format_info[0], ','.join(Format_info[1:])])))
         else:
             filtered_vcf.write(line)
 
@@ -210,7 +212,7 @@ def reformat_cutesv(inp, out, columnid):
                     pos_idx = [i for i, x in enumerate(INFO) if x.startswith('END')][0]
                     INFO[pos_idx] = 'END=' + str(int(INFO[pos_idx].split('=')[1]) + 1)
                     columns[headers.index('INFO')] = ';'.join(INFO)
-                    filtered_vcf.write('{}\t{}\n'.format('\t'.join([columns[0:9], ':'.join([Format_info[0], ','.join(Format_info[1:3])])])))
+                    filtered_vcf.write('{}\t{}\n'.format('\t'.join(columns[0:9]), ':'.join([Format_info[0], ','.join(Format_info[1:3])])))
                 elif 'INS' in columns[headers.index('INFO')]:
                     columns[headers.index('POS')] = str(int(columns[headers.index('POS')]) - 1)
                     columns[headers.index('REF')] = 'N'
@@ -218,10 +220,10 @@ def reformat_cutesv(inp, out, columnid):
                         columns[headers.index('ALT')]
                     )
                     columns[headers.index('ALT')] = '<INS>'
-                    filtered_vcf.write('{}\t{}\n'.format('\t'.join([columns[0:9], ':'.join([Format_info[0], ','.join(Format_info[1:3])])])))
+                    filtered_vcf.write('{}\t{}\n'.format('\t'.join(columns[0:9]), ':'.join([Format_info[0], ','.join(Format_info[1:3])])))
                 else:
                     columns[headers.index('REF')] = 'N'
-                    filtered_vcf.write('{}\t{}\n'.format('\t'.join([columns[0:9], ':'.join([Format_info[0], ','.join(Format_info[1:3])])])))
+                    filtered_vcf.write('{}\t{}\n'.format('\t'.join(columns[0:9]), ':'.join([Format_info[0], ','.join(Format_info[1:3])])))
         else:
             filtered_vcf.write(line)
 
