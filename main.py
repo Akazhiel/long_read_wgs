@@ -307,6 +307,8 @@ def main(FQ_NORMAL, FQ_TUMOR, SAMPLEID, GENOME_REF, THREADS, STEPS, NUM_CALLERS,
                   'cutesv_combined_calls.vcf', 50)
         )
 
+        merge_cutesv.start()
+
         # Wait for merges to finish
 
         merge_svim.join()

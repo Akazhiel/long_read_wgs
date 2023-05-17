@@ -94,14 +94,14 @@ def reformat_svim(inp, out, columnid, qual):
                     del Format_info[1]
                     filtered_vcf.write(
                         '{}\t{}\t{}\n'.format(
-                            '\t'.join([columns[0:8], ':'.join(Format), ':'.join([Format_info[0], ','.join(Format_info[1:])])])
+                            '\t'.join(columns[0:8]), ':'.join(Format), ':'.join([Format_info[0], ','.join(Format_info[1:])])
                         )
                     )
                 elif 'DUP:INT' in columns[headers.index('ALT')]:
                     columns[headers.index('ALT')] = '<DUP>'
                     filtered_vcf.write(
                         '{}\t{}\t{}\n'.format(
-                            '\t'.join([columns[0:8], Format, ':'.join([Format_info[0], ','.join(Format_info[1:])])])
+                            '\t'.join(columns[0:8]), ':'.join(Format), ':'.join([Format_info[0], ','.join(Format_info[1:])])
                         )
                     )
                 elif 'DEL' in columns[headers.index('INFO')]:
@@ -114,7 +114,7 @@ def reformat_svim(inp, out, columnid, qual):
                     columns[headers.index('INFO')] = ';'.join(INFO)
                     filtered_vcf.write(
                         '{}\t{}\t{}\n'.format(
-                            '\t'.join([columns[0:8], Format, ':'.join([Format_info[0], ','.join(Format_info[1:])])])
+                            '\t'.join(columns[0:8]), Format, ':'.join([Format_info[0], ','.join(Format_info[1:])])
                         )
                     )
                 elif 'INS' in columns[headers.index('INFO')]:
@@ -122,13 +122,13 @@ def reformat_svim(inp, out, columnid, qual):
                     columns[headers.index('ALT')] = '<INS>'
                     filtered_vcf.write(
                             '{}\t{}\t{}\n'.format(
-                                '\t'.join([columns[0:8], Format, ':'.join([Format_info[0], ','.join(Format_info[1:])])])
+                                '\t'.join(columns[0:8]), Format, ':'.join([Format_info[0], ','.join(Format_info[1:])])
                             )
                         )
                 else:
                     filtered_vcf.write(
                             '{}\t{}\t{}\n'.format(
-                                '\t'.join([columns[0:8], Format, ':'.join([Format_info[0], ','.join(Format_info[1:])])])
+                                '\t'.join(columns[0:8]), Format, ':'.join([Format_info[0], ','.join(Format_info[1:])])
                             )
                         )
 
