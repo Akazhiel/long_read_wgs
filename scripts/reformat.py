@@ -63,7 +63,7 @@ def reformat_svim(inp, out, columnid, qual):
         if line.startswith('##') and 'ID=DP' in line:
             new_DR = line.replace(
                 'ID=DP,Number=1,Type=Integer,Description="Read depth"',
-                'ID=DR,Number=1,Type=Integer,Description="# reads supporting the reference and alternate alleles."',
+                'ID=DR,Number=2,Type=Integer,Description="# reads supporting the reference and alternate alleles."',
             )
             filtered_vcf.write(new_DR)
         elif line.startswith('##') and 'ID=AD' in line:
@@ -147,7 +147,7 @@ def reformat_sniffles(inp, out, columnid):
         if line.startswith('##') and 'ID=DR' in line:
             new_DR = line.replace(
                 'ID=DR,Number=1,Type=Integer,Description="Number of reference reads"',
-                'ID=DR,Number=1,Type=Integer,Description="# reads supporting the reference and alternate alleles."',
+                'ID=DR,Number=2,Type=Integer,Description="# reads supporting the reference and alternate alleles."',
             )
             filtered_vcf.write(new_DR)
         elif line.startswith('#CHROM'):
@@ -194,7 +194,7 @@ def reformat_cutesv(inp, out, columnid):
         if line.startswith('##') and 'ID=DR' in line:
             new_DR = line.replace(
                 'ID=DR,Number=1,Type=Integer,Description="Number of reference reads"',
-                'ID=DR,Number=1,Type=Integer,Description="# reads supporting the reference and alternate alleles."',
+                'ID=DR,Number=2,Type=Integer,Description="# reads supporting the reference and alternate alleles."',
             )
             filtered_vcf.write(new_DR)
         elif line.startswith('#CHROM'):
