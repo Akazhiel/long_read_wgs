@@ -16,7 +16,7 @@ def reformat_nanomonsv(inp, out):
             filtered_vcf.write('##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n')
             new_DR = line.replace(
                 'ID=TR,Number=1,Type=Integer,Description="The number of reads around the breakpoints"',
-                'ID=DR,Number=1,Type=Integer,Description="# of reads supporting the reference allele."',
+                'ID=AD,Number=1,Type=Integer,Description="# of reads supporting the reference allele."',
             )
             filtered_vcf.write(new_DR)
         elif line.startswith('##') and 'ID=VR' in line:
@@ -63,7 +63,7 @@ def reformat_svim(inp, out, columnid, qual):
         if line.startswith('##') and 'ID=DP' in line:
             new_DR = line.replace(
                 'ID=DP,Number=1,Type=Integer,Description="Read depth"',
-                'ID=DR,Number=2,Type=Integer,Description="# reads supporting the reference and alternate alleles."',
+                'ID=AD,Number=2,Type=Integer,Description="# reads supporting the reference and alternate alleles."',
             )
             filtered_vcf.write(new_DR)
         elif line.startswith('##') and 'ID=AD' in line:
@@ -84,7 +84,7 @@ def reformat_svim(inp, out, columnid, qual):
                 continue
             if int(columns[headers.index('QUAL')]) >= qual:
                 Format = (
-                        columns[headers.index('FORMAT')].replace('DP', 'DR') # .replace('AD', 'DV')
+                        columns[headers.index('FORMAT')].replace('DP', 'AD') # .replace('AD', 'DV')
                     )
                 Format = Format.split(':')
                 Format_info = re.split(':|,', columns[headers.index(columnid)])
@@ -147,7 +147,7 @@ def reformat_sniffles(inp, out, columnid):
         if line.startswith('##') and 'ID=DR' in line:
             new_DR = line.replace(
                 'ID=DR,Number=1,Type=Integer,Description="Number of reference reads"',
-                'ID=DR,Number=2,Type=Integer,Description="# reads supporting the reference and alternate alleles."',
+                'ID=AD,Number=2,Type=Integer,Description="# reads supporting the reference and alternate alleles."',
             )
             filtered_vcf.write(new_DR)
         elif line.startswith('#CHROM'):
@@ -157,8 +157,11 @@ def reformat_sniffles(inp, out, columnid):
             filtered_vcf.write(line)
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
+            Format = (
+                        columns[headers.index('FORMAT')].replace('DP', 'AD') # .replace('AD', 'DV')
+                    )
             Format_info = re.split(':|,', columns[headers.index(columnid)])
-            Format = re.split(':', columns[headers.index('FORMAT')])
+            Format = re.split(':', Format)
             del Format_info[1]
             del Format[1]
             del Format[-1]
@@ -194,7 +197,7 @@ def reformat_cutesv(inp, out, columnid):
         if line.startswith('##') and 'ID=DR' in line:
             new_DR = line.replace(
                 'ID=DR,Number=1,Type=Integer,Description="Number of reference reads"',
-                'ID=DR,Number=2,Type=Integer,Description="# reads supporting the reference and alternate alleles."',
+                'ID=AD,Number=2,Type=Integer,Description="# reads supporting the reference and alternate alleles."',
             )
             filtered_vcf.write(new_DR)
         elif line.startswith('#CHROM'):
@@ -208,8 +211,11 @@ def reformat_cutesv(inp, out, columnid):
             if columns[headers.index('#CHROM')] not in chrID:
                 continue
             if columns[headers.index('QUAL')] != '.':
+                Format = (
+                        columns[headers.index('FORMAT')].replace('DP', 'AD') # .replace('AD', 'DV')
+                    )
                 Format_info = re.split(':|,', columns[headers.index(columnid)])
-                Format = re.split(':', columns[headers.index('FORMAT')])
+                Format = re.split(':', Format)
                 del Format[2:]
                 if 'DEL' in columns[headers.index('INFO')]:
                     columns[headers.index('REF')] = 'N'
