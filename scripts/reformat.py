@@ -158,7 +158,7 @@ def reformat_sniffles(inp, out, columnid):
         elif not line.startswith('#'):
             columns = line.strip().split('\t')
             Format = (
-                        columns[headers.index('FORMAT')].replace('DP', 'AD') # .replace('AD', 'DV')
+                        columns[headers.index('FORMAT')].replace('DR', 'AD') # .replace('AD', 'DV')
                     )
             Format_info = re.split(':|,', columns[headers.index(columnid)])
             Format = re.split(':', Format)
