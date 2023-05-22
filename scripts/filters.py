@@ -11,13 +11,13 @@ def filter_somatic(inp, out, caller):
     writer = vcfpy.Writer.from_path(out, reader.header)
     for record in reader:
         calls = {x.sample: x.data for x in record.calls}
-        token = calls[f'{caller}_Normal']['AD']
+        token = calls[f'{caller}_Normal']['DR']
         normal_DR = token if type(token) is int else token[0]
-        token = calls[f'{caller}_Tumor']['AD']
+        token = calls[f'{caller}_Tumor']['DR']
         tumor_DR = token if type(token) is int else token[0]
-        token = calls[f'{caller}_Normal']['AD']
+        token = calls[f'{caller}_Normal']['DR']
         normal_DV = token if type(token) is int else token[1]
-        token = calls[f'{caller}_Tumor']['AD']
+        token = calls[f'{caller}_Tumor']['DR']
         tumor_DV = token if type(token) is int else token[1]
         tumor_DP = tumor_DR + tumor_DV
         normal_DP = normal_DR + normal_DV
