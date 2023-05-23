@@ -32,7 +32,7 @@ def filter_callers(inp, out, num_callers):
     reader = vcfpy.Reader.from_path(inp)
     writer = vcfpy.Writer.from_path(out, reader.header)
     for record in reader:
-        called = [x for x in record.calls if x.data['AD'] is not None and 'Normal' not in x.sample]
+        called = [x for x in record.calls if x.data['DR'] is not None and 'Normal' not in x.sample]
         if len(called) >= num_callers:
             writer.write_record(record) 
 
