@@ -21,6 +21,8 @@ def merge_variants(inp, out, distance):
     )
     exec_command(cmd)
 
+    cmd = 'sed -i "s/DR/AD" {}'.format(out)
+
 def add_ins_sequence(merged_vcf, source_vcf, output_vcf):
     # Sort and index the merged vcf
     cmd = '{} sort -O z -o {}.gz {} && {} -s 1 -b 2 -e 2 {}.gz'.format(BCFTOOLS, merged_vcf, merged_vcf, TABIX, merged_vcf)
