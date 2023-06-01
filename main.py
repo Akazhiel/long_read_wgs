@@ -456,7 +456,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--ensembl-version',
         metavar='\b',
-        help='Ensembl version number that was used to annotate the variants with AnnotSV. (Default: %{default}',
+        help='Ensembl version number that was used to annotate the variants with AnnotSV. (Default: %(default)s)',
         type=int,
         default=107,
         required=False,
