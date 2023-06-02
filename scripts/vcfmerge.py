@@ -21,7 +21,7 @@ def merge_variants(inp, out, distance):
     )
     exec_command(cmd)
 
-    cmd = 'sed -i "s/:DR:/:AD:/" {}'.format(out)
+    cmd = 'sed -i "s/DR/AD/" {}'.format(out)
 
     exec_command(cmd)
 
